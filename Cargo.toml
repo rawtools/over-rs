@@ -1,0 +1,20 @@
+[package]
+name = "over"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ansi_term = "0.12.1"
+askama = "0.11.0"
+clap = { version = "3.0.14", features = ["derive", "env"] }
+config = { version = "0.11.0", features = ["json", "yaml", "toml"] }
+figment = { version = "0.10.6", features = ["env", "toml", "yaml", "json"] }
+glob = "0.3.0"
+serde = "1.0.136"
+xdg = "2.4.0"
+
+[dev-dependencies]
+rstest = "0.12.0"
+trycmd = "0.12.2"
