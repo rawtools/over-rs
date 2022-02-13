@@ -1,5 +1,6 @@
 use over::cli;
 
-fn main() {
-    cli::main();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    cli::main()?;
+    Ok(())
 }

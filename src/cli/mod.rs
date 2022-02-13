@@ -6,19 +6,6 @@ mod apply;
 mod list;
 mod status;
 
-#[derive(Subcommand, Debug)]
-pub enum Commands {
-    #[clap(name = "apply", about = "Apply a given overlay")]
-    Apply(apply::Options),
-    
-    #[clap(name = "list", about = "List known overlays", alias = "ls")]
-    List(list::Options),
-    
-    #[clap(name = "status", about = "Get the current repository/directory overlays status")]
-    Status,
-}
-
-
 #[derive(Parser, Debug)]
 #[structopt( 
     name = "over", 
@@ -54,34 +41,32 @@ pub struct CLI {
     )]
     verbose: bool,
 
-
     #[clap(subcommand)]
     cmd: Option<Commands>
 }
 
-// fn apply(debug: bool, args: &ApplyOptions) {
-//     println!("Apply called");
-//     if debug {
-//         println!("{:#?}", args);
-//     }
-// }
 
-// fn list(debug: bool, args: &ListOptions) {
-//     println!("List called");
-//     if debug {
-//         println!("{:#?}", args);
-//     }
-// }
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    #[clap(name = "apply", about = "Apply a given overlay")]
+    Apply(apply::Params),
+    
+    #[clap(name = "list", about = "List known overlays", alias = "ls")]
+    List(list::Params),
+    
+    #[clap(name = "status", about = "Get the current repository/directory overlays status")]
+    Status,
+}
 
 
-pub fn main() {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = CLI::parse();
     match args.cmd {
         Some(Commands::Apply(ref opt)) => {
-            apply::execute(&args, &opt);
+            apply::execute(&args, opt)?;
         }
         Some(Commands::List(ref opt)) => {
-            list::execute(&args, &opt);
+            list::execute(&args, opt)?;
         }
         Some(Commands::Status) => {
             status::execute(&args);
@@ -89,5 +74,6 @@ pub fn main() {
         None => {
             println!("args: {:?}", args);
         }
-    } 
+    }
+    Ok(())
 }

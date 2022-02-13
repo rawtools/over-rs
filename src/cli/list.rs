@@ -3,28 +3,52 @@ use std::path::PathBuf;
 use clap::Args;
 
 use crate::cli::CLI;
-use crate::overlays::repository::Repository;
+use crate::overlays::Repository;
 
 
 #[derive(Args, Debug)]
-pub struct Options {
-    // #[structopt(short, long, help = "Count all characters in the string")]
-    // length: bool,
-    // #[structopt(short, long, help = "Count only numbers in the given string")]
-    // numbers: bool,
-    // #[structopt(short, long, help = "Count all spaces in the string")]
-    // spaces: bool
+pub struct Params {
+    #[clap(short, long, help = "Display as tree")]
+    tree: bool,
 }
 
-pub fn execute(cli: &CLI, args: &Options) {
+pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn std::error::Error>> {
     if cli.debug {
         println!("{:#?}", args);
     }
     
     // let repo = Repository::new( PathBuf::from(&cli.home) );
 
-    for overlay in Repository::new( PathBuf::from(&cli.home) ).overlays() {
+    for overlay in Repository::new( PathBuf::from(&cli.home) ).overlays()? {
         println!("{}", overlay.name);
     }
+
+    Ok(())
 }
 
+
+
+// use termtree::Tree;
+
+// use std::path::Path;
+// use std::{env, fs, io};
+
+// fn label<P: AsRef<Path>>(p: P) -> String {
+//     p.as_ref().file_name().unwrap().to_str().unwrap().to_owned()
+// }
+
+// fn tree<P: AsRef<Path>>(p: P) -> io::Result<Tree<String>> {
+//     let result = fs::read_dir(&p)?.filter_map(|e| e.ok()).fold(
+//         Tree::root(label(p.as_ref().canonicalize()?)),
+//         |mut root, entry| {
+//             let dir = entry.metadata().unwrap();
+//             if dir.is_dir() {
+//                 root.push(tree(entry.path()).unwrap());
+//             } else {
+//                 root.push(Tree::root(label(entry.path())));
+//             }
+//             root
+//         },
+//     );
+//     Ok(result)
+// }
