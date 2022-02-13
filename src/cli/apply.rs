@@ -1,25 +1,26 @@
+use std::error::Error;
+use std::path::PathBuf;
+
 use clap::Args;
 
 use crate::cli::CLI;
+use crate::overlays::Repository;
 
 #[derive(Args, Debug)]
-pub struct Options {
-    // #[structopt(short, long, help = "Transforms a string to uppercase")]
-    // upper: bool,
-    // #[structopt(short, long, help = "Transforms a string to lowercase")]
-    // lower: bool,
-    // #[structopt(short, long, help = "Reverses a string")]
-    // reverse: bool,
-    // #[structopt(short="pref", long, help = "Adds a prefix to the string")]
-    // prefix: Option<String>,
-    // #[structopt(short="suf", long, help = "Adds a suffix to the string")]
-    // suffix: Option<String>,
+pub struct Params {
+    #[clap(help = "Name of the overlay to apply")]
+    name: String,
 }
 
 
-pub fn execute(cli: &CLI, args: &Options) {
-    println!("Apply called");
+pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn Error>> {
     if cli.debug {
         println!("{:#?}", args);
     }
+
+    let repo = Repository::new(PathBuf::from(&cli.home));
+    let overlay = repo.get(&args.name)?;
+    println!("overlay: {:#?}", overlay);
+    overlay.apply()?;
+    Ok(())
 }
