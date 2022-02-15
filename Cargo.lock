@@ -645,12 +645,13 @@ dependencies = [
  "ansi_term",
  "clap",
  "config",
- "globwalk",
+ "globset",
  "rstest",
  "serde 1.0.136",
  "tera",
  "termtree",
  "trycmd",
+ "walkdir",
  "xdg",
 ]
 
