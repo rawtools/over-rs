@@ -1,17 +1,19 @@
-use std::error::Error;
 use std::path::PathBuf;
 
-use config::ConfigError;
-use globwalk::GlobWalkerBuilder;
+use walkdir::WalkDir;
+use globset::GlobBuilder;
 
-use super::{BASENAME, EXTENSIONS};
+use crate::Expect;
+
+use super::pattern;
 use super::overlay::Overlay;
+
 
 /// Manage all overlays
 #[derive(Debug)]
 pub struct Repository {
     /// Repository root directory
-    root: PathBuf,
+    pub root: PathBuf,
 }
 
 // impl std::fmt::Display for Repository {
@@ -27,30 +29,35 @@ impl Repository {
     }
 
     /// Returns a list of all overlays in the repository
-    pub fn overlays(&self) -> Result<Vec<Overlay>, Box<dyn Error>> {
-        let mut out: Vec<Overlay> = Vec::new();
-        let pattern = format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(","));
-        let overlay_files = GlobWalkerBuilder::new(&self.root, pattern)
-            .build()?
-            .into_iter()
-            .filter_map(Result::ok);
+    pub fn overlays(&self) -> Expect<Vec<Overlay>> {
+        let glob = GlobBuilder::new(&pattern()).literal_separator(true).build()?.compile_matcher();
 
-        for file in overlay_files {
-            let name = file.path().parent().unwrap().strip_prefix(&self.root).unwrap().to_str().unwrap();
-            let root = PathBuf::from(file.path().parent().unwrap());
-            let overlay = Overlay::new(name,  &root)?;
-            if !overlay.parent {
-                out.push(overlay);
-            }
-        }
-        out.sort_by(|a, b| a.root.cmp(&b.root));
-        Ok(out)
+        let mut dirs: Vec<PathBuf> = WalkDir::new(&self.root)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| glob.is_match(e.path().strip_prefix(&self.root).ok().unwrap()))
+            .map(|e| e.path().parent().unwrap().to_path_buf())
+            .collect();
+
+        dirs.sort();
+
+        Ok(
+            dirs.iter().enumerate()
+            .filter_map(|(idx, dir)| {
+                match dirs.get(idx + 1) {
+                    Some(next) if next.starts_with(&dir) => None,
+                    _ => Some(Overlay::new(self, &dir).expect("failed")),
+                }
+            })
+            .collect()
+        )
+
     }
 
     /// Get a repository by its name/relative path
-    pub fn get(&self, name: &str) -> Result<Overlay, ConfigError> {
+    pub fn get(&self, name: &str) -> Expect<Overlay> {
         let root = self.root.join(name);
-        let overlay = Overlay::new(name, &root)?;
+        let overlay = Overlay::new(self, &root)?;
         Ok(overlay)
     }
 }

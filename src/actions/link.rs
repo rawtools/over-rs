@@ -1,6 +1,6 @@
 use std::{path::PathBuf, fmt};
 
-use super::Action;
+use crate::exec::{Action, Context};
 
 pub struct EnsureLink {
     source: PathBuf,
@@ -18,7 +18,7 @@ impl fmt::Display for EnsureLink {
 }
 
 impl Action for EnsureLink {
-    fn execute(dryrun: bool) {
+    fn execute(ctx: Context) {
         todo!()
     }
 }

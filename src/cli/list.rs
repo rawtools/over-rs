@@ -14,6 +14,7 @@ pub struct Params {
 
 pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn std::error::Error>> {
     if cli.debug {
+        println!("{:#?}", cli);
         println!("{:#?}", args);
     }
     

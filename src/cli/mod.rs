@@ -7,7 +7,7 @@ mod list;
 mod status;
 
 #[derive(Parser, Debug)]
-#[structopt( 
+#[clap( 
     name = "over", 
 	about = "git-based overlays",
 	after_help = "over allows you to version your configuration files and workspaces settings",
