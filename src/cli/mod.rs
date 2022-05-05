@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use crate::exec;
+use crate::{exec, Expect};
 
 mod apply;
 mod list;
@@ -76,20 +76,20 @@ pub enum Commands {
 }
 
 
-pub fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn main() -> Expect<()> {
     let args = CLI::parse();
     match args.cmd {
         Some(Commands::List(ref opt)) => {
-            list::execute(&args, opt)?;
+            list::execute(&args, opt).await?;
         }
         Some(Commands::Apply(ref opt)) => {
-            apply::execute(&args, opt)?;
+            apply::execute(&args, opt).await?;
         }
         Some(Commands::Show(ref opt)) => {
-            show::execute(&args, opt)?;
+            show::execute(&args, opt).await?;
         }
         Some(Commands::Status) => {
-            status::execute(&args);
+            status::execute(&args).await?;
         }
         None => {
             println!("args: {:?}", args);
