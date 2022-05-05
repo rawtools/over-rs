@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::overlays::{Repository, Overlay};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct Context {
     
     /// Run without applying changes

@@ -1,3 +1,5 @@
-mod link;
+mod fs;
+mod git;
 
-pub use link::EnsureLink;
+pub use fs::{EnsureDir, EnsureLink};
+pub use git::EnsureGitRepository;
