@@ -1,20 +1,39 @@
 [package]
 name = "over"
-version = "0.1.0"
 edition = "2021"
+version = "0.0.1"
+description = "A git-based files overlay manager (dotfiles as overlays)"
+# readme = "README.md"
+repository = "https://github.com/rawtools/over/"
+license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ansi_term = "0.12.1"
-clap = { version = "3.0.14", features = ["derive", "env"] }
-config = { version = "0.11.0", features = ["json", "yaml", "toml"] }
+dialoguer = "*"
+directories = "*"
+dirs = "*"
 globset = "0.4.8"
-serde = { version = "1.0.136", features = ["derive"] }
+normpath = "0.3.2"
+symlink = "*"
 tera = "1.15.0"
-termtree = "0.2.4"
 walkdir = "2.3.2"
-xdg = "2.4.0"
+tokio = { version = "1.18.1", features = ["full"] }
+
+[dependencies.clap]
+features = ["derive", "env", "unicode"]
+version = "3.1.12"
+
+[dependencies.config]
+features = ["json", "yaml", "toml"]
+version = "0.12.0"
+
+[dependencies.owo-colors]
+features = ["supports-colors"]
+version = "3.2.0"
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0.136"
 
 [dev-dependencies]
 rstest = "0.12.0"

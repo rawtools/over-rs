@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use serde::Serialize;
 use walkdir::WalkDir;
 use globset::GlobBuilder;
 
@@ -10,7 +11,7 @@ use super::overlay::Overlay;
 
 
 /// Manage all overlays
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Repository {
     /// Repository root directory
     pub root: PathBuf,
