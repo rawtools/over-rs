@@ -1,5 +1,6 @@
 use std::{path::PathBuf, fmt, fs::{create_dir_all, self}};
 
+use async_trait::async_trait;
 use symlink::symlink_file;
 
 use owo_colors::{OwoColorize, colors::*};
@@ -26,8 +27,9 @@ impl fmt::Display for EnsureLink {
     }
 }
 
+#[async_trait]
 impl Action for EnsureLink {
-    fn execute(&self, ctx: &Context) -> Expect<()> {
+    async fn execute(&self, ctx: &Context) -> Expect<()> {
         let overlay = ctx.overlay.as_ref().unwrap();
 
         
@@ -97,8 +99,9 @@ impl fmt::Display for EnsureDir {
     }
 }
 
+#[async_trait]
 impl Action for EnsureDir {
-    fn execute(&self, ctx: &Context) -> Expect<()> {
+    async fn execute(&self, ctx: &Context) -> Expect<()> {
         
 
 

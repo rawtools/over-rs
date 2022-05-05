@@ -1,9 +1,9 @@
-use std::error::Error;
 use std::path::PathBuf;
 
 use clap::Args;
 use owo_colors::{OwoColorize, colors::*};
 
+use crate::Expect;
 use crate::cli::CLI;
 use crate::overlays::Repository;
 
@@ -14,7 +14,7 @@ pub struct Params {
 }
 
 
-pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn Error>> {
+pub async fn execute(cli: &CLI, args: &Params) -> Expect<()> {
     if cli.debug {
         println!("{:#?}", cli);
         println!("{:#?}", args);

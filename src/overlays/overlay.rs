@@ -109,18 +109,18 @@ impl Overlay {
     }
 
 
-    pub fn apply_to(&self, ctx: &exec::Context, target_root: &Path) -> Expect<()> {
+    pub async fn apply_to(&self, ctx: &exec::Context, target_root: &Path) -> Expect<()> {
         // let target_root = self.resolve_target(&ctx)?;
 
         if !target_root.exists() {
             let mkdir = EnsureDir::new(target_root.to_path_buf());
-            mkdir.execute(ctx)?;
+            mkdir.execute(ctx).await?;
         }
 
         if let Some(git_repos) = &self.git {
             for git_repo in git_repos {
                 let action = EnsureGitRepository::new(target_root.join(git_repo.0), git_repo.1.to_string());
-                action.execute(ctx)?;
+                action.execute(ctx).await?;
             }
         }
 
@@ -140,14 +140,14 @@ impl Overlay {
                 _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
                 _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
             };
-            action.execute(ctx)?;
+            action.execute(ctx).await?;
         }
         
         Ok(())
     }
 
-    pub fn apply(&self, ctx: &exec::Context) -> Expect<()> {
+    pub async fn apply(&self, ctx: &exec::Context) -> Expect<()> {
         let target_root = self.resolve_target(&ctx)?;
-        self.apply_to(ctx, &target_root)
+        self.apply_to(ctx, &target_root).await
     }
 }

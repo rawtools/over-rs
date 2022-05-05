@@ -1,10 +1,10 @@
-use std::error::Error;
 use std::path::{PathBuf, Path};
 
 use clap::Args;
 use dirs::home_dir;
 use owo_colors::{OwoColorize, colors::*};
 
+use crate::Expect;
 use crate::cli::CLI;
 use crate::exec::Context;
 use crate::overlays::Repository;
@@ -20,7 +20,7 @@ pub struct Params {
 }
 
 
-pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn Error>> {
+pub async fn execute(cli: &CLI, args: &Params) -> Expect<()> {
     if cli.debug {
         println!("{:#?}", cli);
         println!("{:#?}", args);
@@ -50,8 +50,8 @@ pub fn execute(cli: &CLI, args: &Params) -> Result<(), Box<dyn Error>> {
     );
 
     match &args.target {
-        Some(root) => overlay.apply_to(&ctx, Path::new(&root))?,
-        None => overlay.apply(&ctx)?,
+        Some(root) => overlay.apply_to(&ctx, Path::new(&root)).await?,
+        None => overlay.apply(&ctx).await?,
     }
     
     Ok(())

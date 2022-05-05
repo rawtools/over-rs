@@ -1,5 +1,6 @@
 use std::{path::PathBuf};
 
+use async_trait::async_trait;
 use owo_colors::{OwoColorize, colors::*};
 
 use crate::{exec::{Action, Context}, Expect};
@@ -21,8 +22,9 @@ impl EnsureGitRepository {
 //     }
 // }
 
+#[async_trait]
 impl Action for EnsureGitRepository {
-    fn execute(&self, ctx: &Context) -> Expect<()> {
+    async fn execute(&self, ctx: &Context) -> Expect<()> {
         if ctx.verbose || ctx.dry_run {
             println!(" {} {} {} {}", 
                 "clone:".fg::<White>(), 
