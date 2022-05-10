@@ -1,8 +1,12 @@
 pub mod actions;
 pub mod cli;
-pub mod overlays;
 pub mod exec;
+pub mod overlays;
+pub mod ui;
 
 mod utils;
 
 pub use utils::Expect;
+
+#[macro_use]
+extern crate lazy_static;

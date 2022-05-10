@@ -1,12 +1,11 @@
 use std::path::{PathBuf, Path};
 
 use clap::Args;
-use dirs::home_dir;
 use owo_colors::{OwoColorize, colors::*};
 
-use crate::Expect;
+use anyhow::Result;
 use crate::cli::CLI;
-use crate::exec::Context;
+use crate::exec::{Context};
 use crate::overlays::Repository;
 
 #[derive(Args, Debug)]
@@ -20,7 +19,7 @@ pub struct Params {
 }
 
 
-pub async fn execute(cli: &CLI, args: &Params) -> Expect<()> {
+pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     if cli.debug {
         println!("{:#?}", cli);
         println!("{:#?}", args);
@@ -29,13 +28,13 @@ pub async fn execute(cli: &CLI, args: &Params) -> Expect<()> {
     let repo = Repository::new(PathBuf::from(&cli.home));
     let overlay = repo.get(&args.name)?;
     
-    let ctx = Context {
-        dry_run: cli.dry_run,
-        debug: cli.debug,
-        verbose: cli.verbose,
-        repository: Some(repo),
-        overlay: Some(overlay.clone()),
-    };
+    let ctx = Context::new(
+        cli.dry_run, 
+        cli.debug, 
+        cli.verbose, 
+        Some(repo), 
+        Some(overlay.clone()),
+    );
 
     let target = match &args.target {
         Some(root) => PathBuf::from(&root),

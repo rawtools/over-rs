@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 
-use crate::Expect;
+use anyhow::Result;
 use crate::cli::CLI;
 use crate::overlays::Repository;
 
@@ -13,7 +13,7 @@ pub struct Params {
     tree: bool,
 }
 
-pub async fn execute(cli: &CLI, args: &Params) -> Expect<()> {
+pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     if cli.debug {
         println!("{:#?}", cli);
         println!("{:#?}", args);

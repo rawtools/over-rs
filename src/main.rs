@@ -1,4 +1,5 @@
-use over::{cli, Expect};
+use anyhow::Result;
+use over::cli;
 
 // fn main() -> Result<(), Box<dyn std::error::Error>> {
 //     cli::main()?;
@@ -7,7 +8,7 @@ use over::{cli, Expect};
 
 
 #[tokio::main]
-async fn main() -> Expect<()> {
+async fn main() -> Result<()> {
     cli::main().await?;
     Ok(())
 }

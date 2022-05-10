@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::{exec, Expect};
+use crate::exec;
 
 mod apply;
 mod list;
@@ -28,18 +29,21 @@ pub struct CLI {
 
     #[clap(
         long, short = 'n',
+        global = true,
         help = "Run without applying changes",
     )]
     dry_run: bool,
 
     #[clap(
         long, short,
+        global = true,
         help = "Toggle debug traces",
     )]
     debug: bool,
 
     #[clap(
         long, short,
+        global = true,
         help = "Toggle verbose output",
     )]
     verbose: bool,
@@ -76,7 +80,7 @@ pub enum Commands {
 }
 
 
-pub async fn main() -> Expect<()> {
+pub async fn main() -> Result<()> {
     let args = CLI::parse();
     match args.cmd {
         Some(Commands::List(ref opt)) => {

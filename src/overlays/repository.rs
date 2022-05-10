@@ -4,7 +4,7 @@ use serde::Serialize;
 use walkdir::WalkDir;
 use globset::GlobBuilder;
 
-use crate::Expect;
+use anyhow::Result;
 
 use super::pattern;
 use super::overlay::Overlay;
@@ -30,7 +30,7 @@ impl Repository {
     }
 
     /// Returns a list of all overlays in the repository
-    pub fn overlays(&self) -> Expect<Vec<Overlay>> {
+    pub fn overlays(&self) -> Result<Vec<Overlay>> {
         let glob = GlobBuilder::new(&pattern()).literal_separator(true).build()?.compile_matcher();
 
         let mut dirs: Vec<PathBuf> = WalkDir::new(&self.root)
@@ -56,7 +56,7 @@ impl Repository {
     }
 
     /// Get a repository by its name/relative path
-    pub fn get(&self, name: &str) -> Expect<Overlay> {
+    pub fn get(&self, name: &str) -> Result<Overlay> {
         let root = self.root.join(name);
         let overlay = Overlay::new(self, &root)?;
         Ok(overlay)

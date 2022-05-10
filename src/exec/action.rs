@@ -1,12 +1,20 @@
 use async_trait::async_trait;
 
-use crate::Expect;
+use anyhow::Result;
 
-use super::context::Context;
+use super::context::Ctx;
 
 #[async_trait]
 pub trait Action {
-    async fn execute(&self, ctx: &Context) -> Expect<()>;
-
-    // fn display(&self, ctx: &Context) -> Expect<String>;
+    async fn execute(&self, ctx: Ctx) -> Result<()>;
 }
+
+
+// pub struct Progress {
+//     percent: u8,
+// }
+
+// #[async_trait]
+// pub trait WithProgress {
+//     fn listen(&self) -> Receiver<Progress>;
+// }

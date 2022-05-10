@@ -1,11 +1,17 @@
 use std::{path::PathBuf, fmt, fs::{create_dir_all, self}};
 
+use anyhow::Result;
 use async_trait::async_trait;
+use console::Emoji;
 use symlink::symlink_file;
 
 use owo_colors::{OwoColorize, colors::*};
 
-use crate::{exec::{Action, Context}, Expect};
+use crate::exec::{Action, Ctx};
+
+
+static DIRECTORY: Emoji<'_, '_> = Emoji("📁", "");
+static LINK: Emoji<'_, '_> = Emoji("🔗", "");
 
 pub struct EnsureLink {
     pub source: PathBuf,
@@ -29,10 +35,8 @@ impl fmt::Display for EnsureLink {
 
 #[async_trait]
 impl Action for EnsureLink {
-    async fn execute(&self, ctx: &Context) -> Expect<()> {
+    async fn execute(&self, ctx: Ctx) -> Result<()> {
         let overlay = ctx.overlay.as_ref().unwrap();
-
-        
 
         if ctx.verbose || ctx.dry_run {
             // We operate on string as path normalization is broken in rust
@@ -41,10 +45,14 @@ impl Action for EnsureLink {
             //  - https://github.com/rust-lang/rfcs/issues/2208
             let rel_path = self.source.to_str().unwrap().strip_prefix(&overlay.root.to_str().unwrap()).unwrap();
             let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
-            println!("🔗 {} {{{} -> {}}}{}", 
-                "link:".fg::<White>(), 
+            println!("{} {} {}{} {} {}{}{}",
+                LINK, 
+                "link:".fg::<White>(),
+                "{".fg::<White>(), 
                 overlay.root.display(),
+                "->".fg::<White>(),
                 target_root,
+                "}".fg::<White>(),
                 rel_path,
             )
         }
@@ -62,24 +70,7 @@ impl Action for EnsureLink {
 
 
         Ok(())
-        // todo!();
     }
-
-    // fn display(&self, ctx: &Context) -> Expect<String> {
-    //     let overlay = ctx.overlay.as_ref().unwrap();
-    //     // We operate on string as path normalization is broken in rust
-    //     // See:  
-    //     //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
-    //     //  - https://github.com/rust-lang/rfcs/issues/2208
-    //     let rel_path = self.source.to_str().unwrap().strip_prefix(&overlay.root.to_str().unwrap()).unwrap();
-    //     let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
-    //     Ok(format!("🔗 {} {{{} -> {}}}{}\n", 
-    //         "link:".fg::<White>(), 
-    //         overlay.root.display(),
-    //         target_root,
-    //         rel_path,
-    //     ))
-    // }
 }
 
 pub struct EnsureDir {
@@ -101,12 +92,11 @@ impl fmt::Display for EnsureDir {
 
 #[async_trait]
 impl Action for EnsureDir {
-    async fn execute(&self, ctx: &Context) -> Expect<()> {
+    async fn execute(&self, ctx: Ctx) -> Result<()> {
         
-
-
         if ctx.verbose || ctx.dry_run {
-            println!("📁 {} {}", 
+            println!("{} {} {}", 
+                DIRECTORY,
                 "create directory:".fg::<White>(), 
                 self.path.display(),
             )
@@ -117,14 +107,4 @@ impl Action for EnsureDir {
         }
         Ok(())
     }
-
-    // fn display(&self, _ctx: &Context) -> Expect<String> {
-    //     // let overlay = ctx.overlay.as_ref().unwrap();
-    //     // let rel_path = self.source.strip_prefix(overlay.root.as_path())?;
-    //     // let target_root = self.target.to_str().unwrap().strip_suffix(rel_path.to_str().unwrap()).unwrap();
-    //     Ok(format!("📁 {} {}\n", 
-    //         "create directory:".fg::<White>(), 
-    //         self.path.display(),
-    //     ))
-    // }
 }
