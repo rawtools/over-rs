@@ -1,17 +1,20 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
 use dirs::home_dir;
 use config::{Config, File, FileFormat, FileSourceFile};
+use futures::future::join_all;
 use globset::GlobBuilder;
+use indicatif::MultiProgress;
 use serde::{Deserialize, Serialize};
+use tokio::spawn;
 use walkdir::WalkDir;
 
 use tera::{Context, Tera};
 
 use crate::actions::{EnsureLink, EnsureDir, EnsureGitRepository};
-use crate::{Expect, exec};
-use crate::exec::Action;
+use crate::exec::{self, Action, Ctx};
 
 use super::{Repository, pattern};
 
@@ -43,7 +46,7 @@ pub struct Overlay {
 
 
 impl Overlay {
-    pub fn new(repository: &Repository, root: &Path) -> Expect<Self> {
+    pub fn new(repository: &Repository, root: &Path) -> Result<Self> {
         let name = root.strip_prefix(repository.root.as_path())?.to_str().unwrap();
         let mut sources: Vec<File<FileSourceFile, FileFormat>> = Vec::new();
         let mut dir = root;
@@ -66,7 +69,7 @@ impl Overlay {
         Ok(s.try_deserialize()?)
     }
 
-    pub fn resolve_target(&self, ctx: &exec::Context) -> Expect<PathBuf> {
+    pub fn resolve_target(&self, ctx: &exec::Context) -> Result<PathBuf> {
         let path = PathBuf::from(
             &Tera::one_off(
                 self.target.as_str(), 
@@ -109,19 +112,44 @@ impl Overlay {
     }
 
 
-    pub async fn apply_to(&self, ctx: &exec::Context, target_root: &Path) -> Expect<()> {
-        // let target_root = self.resolve_target(&ctx)?;
-
+    pub async fn apply_to(&self, ctx: &Ctx, target_root: &Path) -> Result<()> {
         if !target_root.exists() {
             let mkdir = EnsureDir::new(target_root.to_path_buf());
-            mkdir.execute(ctx).await?;
+            mkdir.execute(ctx.clone()).await?;
         }
 
         if let Some(git_repos) = &self.git {
-            for git_repo in git_repos {
-                let action = EnsureGitRepository::new(target_root.join(git_repo.0), git_repo.1.to_string());
-                action.execute(ctx).await?;
+            let progress = MultiProgress::new();
+
+            {
+                let mut state = ctx.state.write().unwrap();
+                state.progress = Some(progress);
             }
+            let _results = join_all(git_repos.iter().map(|(path, url)| {
+                let target = target_root.join(path);
+                let url = url.to_string();
+                let ctx = ctx.clone();
+                spawn(async move {
+                    let action = EnsureGitRepository::new(target, url.to_string());
+                    action.execute(ctx).await
+                })
+            })).await;
+            // println!("{:#?}", results);
+
+            // let tasks: Vec<_> = git_repos.iter().map(|(path, url)| {
+                
+            //     let target = target_root.join(path);
+            //     let url = url.to_string();
+            //     let ctx = ctx.clone();
+
+            //     spawn(async move {
+            //         let action = EnsureGitRepository::new(target, url);
+            //         action.execute(ctx).await
+            //     })
+            // }).collect();
+            // println!("{:#?}", join_all(tasks).await);
+            
+            ctx.state.read().unwrap().progress.as_ref().unwrap().join()?;
         }
 
         let exclude = GlobBuilder::new(&pattern()).literal_separator(true).build()?.compile_matcher();
@@ -140,13 +168,13 @@ impl Overlay {
                 _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
                 _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
             };
-            action.execute(ctx).await?;
+            action.execute(ctx.clone()).await?;
         }
         
         Ok(())
     }
 
-    pub async fn apply(&self, ctx: &exec::Context) -> Expect<()> {
+    pub async fn apply(&self, ctx: &Ctx) -> Result<()> {
         let target_root = self.resolve_target(&ctx)?;
         self.apply_to(ctx, &target_root).await
     }
