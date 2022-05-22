@@ -9,51 +9,51 @@ license = "MIT"
 
 
 [dependencies]
-dialoguer = "*"
-directories = "*"
-dirs = "*"
+dialoguer = "0.10.1"
+directories = "4.0.1"
+dirs = "4.0.0"
 globset = "0.4.8"
 normpath = "0.3.2"
-symlink = "*"
+symlink = "0.1.0"
 tera = "1.15.0"
 walkdir = "2.3.2"
-tokio = { version = "1.18.1", features = ["full"] }
+tokio = { version = "1.18.2", features = ["full"] }
 indicatif = "0.16.2"
-toml_edit = { version = "0.14.3", features = ["easy"] }
-git2 = "0.14"
+toml_edit = { version = "0.14.4", features = ["easy"] }
+git2 = "0.14.4"
+git2_credentials = "0.8.0"
 async-trait = "0.1.53"
-asyncgit = "0.21.0"
+# asyncgit = "0.20.1"
 console = "0.15.0"
 lazy_static = "1.4.0"
 prs-lib = "0.3.2"
 keyring = "1.1.2"
-git2_credentials = "0.8.0"
 anyhow = "1.0.57"
 thiserror = "1.0.31"
 futures = "0.3.21"
 
 [dependencies.clap]
 features = ["derive", "env", "unicode"]
-version = "3.1.12"
+version = "3.1.18"
 
 [dependencies.config]
 features = ["json", "yaml", "toml"]
-version = "0.12.0"
+version = "0.13.1"
 
 [dependencies.owo-colors]
 features = ["supports-colors"]
-version = "3.2.0"
+version = "3.4.0"
 
 [dependencies.serde]
 features = ["derive"]
-version = "1.0.136"
+version = "1.0.137"
 
 [dev-dependencies]
-rstest = "0.12.0"
-trycmd = "0.12.2"
+rstest = "0.13.0"
+trycmd = "0.13.4"
 
 [features]
 
 
-[patch.crates-io]
-asyncgit = { git = 'https://github.com/extrawurst/gitui' }
+# [patch.crates-io]
+# asyncgit = { git = 'https://github.com/extrawurst/gitui' }

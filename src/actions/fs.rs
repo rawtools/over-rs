@@ -1,17 +1,48 @@
-use std::{path::PathBuf, fmt, fs::{create_dir_all, self}};
+use std::path::{PathBuf, Path};
+use std::fmt;
+use std::fs::{create_dir_all, self};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use console::Emoji;
+use globset::GlobBuilder;
 use symlink::symlink_file;
 
 use owo_colors::{OwoColorize, colors::*};
+use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
+use crate::overlays;
+use crate::ui::{self, emojis, style};
 
 
-static DIRECTORY: Emoji<'_, '_> = Emoji("📁", "");
-static LINK: Emoji<'_, '_> = Emoji("🔗", "");
+pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
+    if let Some(overlay) = &ctx.overlay {
+        ui::info(format!("{} {}",
+            emojis::LINK,
+            style::WHITE.apply_to("Linking files"), 
+        ))?;
+        let exclude = GlobBuilder::new(&overlays::GLOB_PATTERN).literal_separator(true).build()?.compile_matcher();
+        let files = WalkDir::new(&overlay.root)
+            .min_depth(1)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| !exclude.is_match(e.path()));
+    
+        for file in files {
+            let rel_path = file.path().strip_prefix(&overlay.root)?;
+            let target = to.join(rel_path);
+            let path = file.path();
+            let action: Box<dyn Action> = match () {
+                _ if path.is_dir() => Box::new(EnsureDir::new(target)),
+                _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
+                _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
+            };
+            action.execute(ctx.clone()).await?;
+        }
+    };
+    Ok(())
+}
+
 
 pub struct EnsureLink {
     pub source: PathBuf,
@@ -46,7 +77,7 @@ impl Action for EnsureLink {
             let rel_path = self.source.to_str().unwrap().strip_prefix(&overlay.root.to_str().unwrap()).unwrap();
             let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
             println!("{} {} {}{} {} {}{}{}",
-                LINK, 
+                emojis::LINK, 
                 "link:".fg::<White>(),
                 "{".fg::<White>(), 
                 overlay.root.display(),
@@ -96,7 +127,7 @@ impl Action for EnsureDir {
         
         if ctx.verbose || ctx.dry_run {
             println!("{} {} {}", 
-                DIRECTORY,
+                emojis::DIRECTORY,
                 "create directory:".fg::<White>(), 
                 self.path.display(),
             )

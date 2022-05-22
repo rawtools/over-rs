@@ -4,19 +4,14 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use dirs::home_dir;
 use config::{Config, File, FileFormat, FileSourceFile};
-use futures::future::join_all;
-use globset::GlobBuilder;
-use indicatif::MultiProgress;
 use serde::{Deserialize, Serialize};
-use tokio::spawn;
-use walkdir::WalkDir;
 
 use tera::{Context, Tera};
 
-use crate::actions::{EnsureLink, EnsureDir, EnsureGitRepository};
+use crate::actions::{EnsureDir, self};
 use crate::exec::{self, Action, Ctx};
 
-use super::{Repository, pattern};
+use super::Repository;
 
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -118,59 +113,9 @@ impl Overlay {
             mkdir.execute(ctx.clone()).await?;
         }
 
-        if let Some(git_repos) = &self.git {
-            let progress = MultiProgress::new();
+        actions::git::clone_repositories(ctx.clone(), target_root).await?;
+        actions::fs::link(ctx.clone(), target_root).await?;
 
-            {
-                let mut state = ctx.state.write().unwrap();
-                state.progress = Some(progress);
-            }
-            let _results = join_all(git_repos.iter().map(|(path, url)| {
-                let target = target_root.join(path);
-                let url = url.to_string();
-                let ctx = ctx.clone();
-                spawn(async move {
-                    let action = EnsureGitRepository::new(target, url.to_string());
-                    action.execute(ctx).await
-                })
-            })).await;
-            // println!("{:#?}", results);
-
-            // let tasks: Vec<_> = git_repos.iter().map(|(path, url)| {
-                
-            //     let target = target_root.join(path);
-            //     let url = url.to_string();
-            //     let ctx = ctx.clone();
-
-            //     spawn(async move {
-            //         let action = EnsureGitRepository::new(target, url);
-            //         action.execute(ctx).await
-            //     })
-            // }).collect();
-            // println!("{:#?}", join_all(tasks).await);
-            
-            ctx.state.read().unwrap().progress.as_ref().unwrap().join()?;
-        }
-
-        let exclude = GlobBuilder::new(&pattern()).literal_separator(true).build()?.compile_matcher();
-        let files = WalkDir::new(&self.root)
-            .min_depth(1)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| !exclude.is_match(e.path()));
-
-        for file in files {
-            let rel_path = file.path().strip_prefix(&self.root)?;
-            let target = target_root.join(rel_path);
-            let path = file.path();
-            let action: Box<dyn Action> = match () {
-                _ if path.is_dir() => Box::new(EnsureDir::new(target)),
-                _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
-                _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
-            };
-            action.execute(ctx.clone()).await?;
-        }
-        
         Ok(())
     }
 
