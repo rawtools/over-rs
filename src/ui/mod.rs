@@ -1,3 +1,4 @@
+pub mod emojis;
 pub mod style;
 
 pub mod log;

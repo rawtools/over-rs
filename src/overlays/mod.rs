@@ -6,7 +6,7 @@ const BASENAME: &str = "over";
 const EXTENSIONS: &[&str] = &["yml", "yaml", "toml", "json"];
 
 /// Overlay files search pattern
-fn pattern() -> String {
+pub fn pattern() -> String {
     format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(","))
 }
 
@@ -15,3 +15,7 @@ pub mod repository;
 
 pub use overlay::Overlay;
 pub use repository::Repository;
+
+lazy_static! {
+    pub static ref GLOB_PATTERN: String = format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(","));
+}
