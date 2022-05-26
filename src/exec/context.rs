@@ -22,6 +22,8 @@ pub struct Context {
     pub overlay: Option<Overlay>,
     
     pub state: RwLock<State>,
+
+    // pub progress: Option<MultiProgress>,
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -58,6 +60,7 @@ impl Context {
                 repository: repository,
                 overlay: overlay,
                 state: RwLock::new(State::default()),
+                // progress: None,
             }
         )
     } 

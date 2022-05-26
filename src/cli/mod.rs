@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, crate_name};
 
 use crate::exec;
 
@@ -11,10 +11,10 @@ mod show;
 mod status;
 
 #[derive(Parser, Debug)]
-#[clap( 
-    name = "over", 
-	about = "git-based overlays",
-	after_help = "over allows you to version your configuration files and workspaces settings",
+#[clap(author, version, about, 
+    name = crate_name!(),
+    long_about = None,
+	// after_help = "over allows you to version your configuration files and workspaces settings",
 )]
 pub struct CLI {
     #[clap(
