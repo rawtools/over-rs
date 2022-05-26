@@ -18,7 +18,7 @@ symlink = "0.1.0"
 tera = "1.15.0"
 walkdir = "2.3.2"
 tokio = { version = "1.18.2", features = ["full"] }
-indicatif = "0.16.2"
+indicatif = "0.17.0-rc.11"
 toml_edit = { version = "0.14.4", features = ["easy"] }
 git2 = "0.14.4"
 git2_credentials = "0.8.0"
@@ -33,7 +33,7 @@ thiserror = "1.0.31"
 futures = "0.3.21"
 
 [dependencies.clap]
-features = ["derive", "env", "unicode"]
+features = ["derive", "env", "unicode", "cargo"]
 version = "3.1.18"
 
 [dependencies.config]

@@ -5,6 +5,7 @@ use std::fs::{create_dir_all, self};
 use anyhow::Result;
 use async_trait::async_trait;
 use globset::GlobBuilder;
+use indicatif::{ProgressBar, ProgressStyle};
 use symlink::symlink_file;
 
 use owo_colors::{OwoColorize, colors::*};
@@ -14,6 +15,14 @@ use crate::exec::{Action, Ctx};
 use crate::overlays;
 use crate::ui::{self, emojis, style};
 
+lazy_static! {
+
+    static ref SPINNER_STYLE: ProgressStyle = ProgressStyle
+        ::with_template("{spinner:.cyan} {wide_msg}").unwrap()
+        .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str());
+        // .progress_chars(style::THIN_PROGRESS.as_str());
+
+}
 
 pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
     if let Some(overlay) = &ctx.overlay {
@@ -21,6 +30,9 @@ pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
             emojis::LINK,
             style::WHITE.apply_to("Linking files"), 
         ))?;
+        
+        let progress = ProgressBar::new_spinner().with_style(SPINNER_STYLE.clone()).with_message("");
+        
         let exclude = GlobBuilder::new(&overlays::GLOB_PATTERN).literal_separator(true).build()?.compile_matcher();
         let files = WalkDir::new(&overlay.root)
             .min_depth(1)
@@ -29,6 +41,7 @@ pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
             .filter(|e| !exclude.is_match(e.path()));
     
         for file in files {
+            // progress.tick();
             let rel_path = file.path().strip_prefix(&overlay.root)?;
             let target = to.join(rel_path);
             let path = file.path();
@@ -37,8 +50,11 @@ pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
                 _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
                 _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
             };
+            progress.set_message(format!("{}", action));
             action.execute(ctx.clone()).await?;
         }
+        // progress.finish_with_message("DOne");
+        progress.finish_and_clear();
     };
     Ok(())
 }

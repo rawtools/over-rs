@@ -12,11 +12,10 @@ use crate::ui::emojis;
 #[derive(Args, Debug)]
 pub struct Params {
     #[clap(help = "Name of the overlay to apply")]
-    name: String,
-
-    #[clap(short, long, help = "The target directory")]
-    target: Option<String>,
+    overlay: String,
     
+    #[clap(help = "One or more files to add")]
+    selection: Option<String>,
 }
 
 
@@ -27,7 +26,7 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     }
 
     let repo = Repository::new(PathBuf::from(&cli.home));
-    let overlay = repo.get(&args.name)?;
+    let overlay = repo.get(&args.overlay)?;
     
     let ctx = Context::new(
         cli.dry_run, 
@@ -44,37 +43,18 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     
     println!("{} {} {} {} {}", 
         emojis::PACKAGE,
-        "Applying overlay".fg::<White>().bold(), 
+        "Add file to overlay overlay".fg::<White>().bold(), 
         overlay.name.fg::<White>().bold().italic(),
         "to".fg::<White>().bold(), 
         target.to_str().unwrap().fg::<White>().bold().italic(),
     );
 
-    let result = overlay.apply_to(&ctx, &target).await;
-    if let Err(e) = result {
-        println!("{} {} {} {} {}", 
-            emojis::CROSSMARK,
-            "Failed to apply overlay".fg::<White>().bold(), 
-            overlay.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(), 
-            target.to_str().unwrap().fg::<White>().bold().italic(),
-        );
-        println!("{}", e);
-    } else {
-        println!("{} {} {} {} {} {}", 
-            emojis::SPARKLE,
-            "Applied overlay".fg::<White>().bold(), 
-            overlay.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(), 
-            target.to_str().unwrap().fg::<White>().bold().italic(),
-            "with success".fg::<White>().bold(), 
-        );
-    };
+    overlay.apply_to(&ctx, &target).await
 
     // match &args.target {
     //     Some(root) => overlay.apply_to(&ctx, Path::new(&root)).await?,
     //     None => overlay.apply(&ctx).await?,
     // }
     
-    Ok(())
+    // Ok(())
 }
