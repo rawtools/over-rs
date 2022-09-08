@@ -7,6 +7,3 @@ pub mod ui;
 mod utils;
 
 pub use utils::Expect;
-
-#[macro_use]
-extern crate lazy_static;

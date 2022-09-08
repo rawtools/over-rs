@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 
 /// Overlay files basename
 const BASENAME: &str = "over";
@@ -16,6 +17,4 @@ pub mod repository;
 pub use overlay::Overlay;
 pub use repository::Repository;
 
-lazy_static! {
-    pub static ref GLOB_PATTERN: String = format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(","));
-}
+pub static GLOB_PATTERN: Lazy<String> = Lazy::new(|| format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(",")));

@@ -1,20 +1,22 @@
 use console::Style;
-use indicatif::ProgressStyle;
 
-lazy_static! {
-    pub static ref WHITE: Style = Style::new().white();
+use once_cell::sync::Lazy;
 
-    pub static ref TICK_CHARS_BRAILLE_4_6_DOWN: String = String::from("⠶⢲⣰⣤⣆⡖");
-    pub static ref TICK_CHARS_BRAILLE_4_6_UP: String = String::from("⠛⠹⠼⠶⠧⠏");
-    pub static ref BRAILLE_6: String = String::from("⠿");
+pub static WHITE: Lazy<Style> = Lazy::new(|| Style::new().white());
+
+pub static TICK_CHARS_BRAILLE_4_6_DOWN: Lazy<String> = Lazy::new(|| String::from("⠶⢲⣰⣤⣆⡖"));
+pub static TICK_CHARS_BRAILLE_4_6_UP: Lazy<String> = Lazy::new(|| String::from("⠛⠹⠼⠶⠧⠏"));
+pub static BRAILLE_6: Lazy<String> = Lazy::new(|| String::from("⠿"));
+
+pub static THIN_PROGRESS: Lazy<String> = Lazy::new(|| String::from("━>-"));
+pub static THIN_DUAL_PROGRESS: Lazy<String> = Lazy::new(|| String::from("=>-"));
+
+pub static DOTS_4: Lazy<String> = Lazy::new(|| String::from("::"));
     
-    pub static ref THIN_PROGRESS: String = String::from("━>-");
-    pub static ref THIN_DUAL_PROGRESS: String = String::from("=>-");
-
     // pub static ref SPINNER: ProgressStyle = ProgressStyle::default_spinner()
     //     .template("{prefix:.bold.dim} {spinner.green} {wide_msg}")
     //     .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
-}
+// }
 
 
 // pub fn spinner() ->  {
