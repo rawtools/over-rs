@@ -16,3 +16,4 @@ pub static SPARKLE: Emoji<'_, '_> = Emoji("✨ ", "");
 
 // Nerd fonts
 // pub static CLONE: Emoji<'_, '_> = Emoji("", "");
+// ✔

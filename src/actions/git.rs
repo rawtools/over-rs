@@ -8,6 +8,7 @@ use futures::future::join_all;
 use git2::{Progress, Repository};
 use git2_credentials::CredentialHandler;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use once_cell::sync::Lazy;
 use owo_colors::{colors::*, OwoColorize};
 use tokio::{
     spawn,
@@ -83,16 +84,16 @@ impl Action for EnsureGitRepository {
         // let overlay = ctx.overlay.as_ref().unwrap();
         // let target = overlay.resolve_target(ctx.as_ref())?;
         // let relpath = self.path.strip_prefix(target.as_path())?;
-        if ctx.verbose || ctx.dry_run {
-            ui::info(format!(
-                "{} {} {} {} {}",
-                emojis::THREAD,
-                "clone:".fg::<White>(),
-                self.remote,
-                "->".fg::<White>(),
-                self.path.display(),
-            ))?;
-        }
+        // if ctx.verbose || ctx.dry_run {
+        //     ui::info(format!(
+        //         "{} {} {} {} {}",
+        //         emojis::THREAD,
+        //         "clone:".fg::<White>(),
+        //         self.remote,
+        //         "->".fg::<White>(),
+        //         self.path.display(),
+        //     ))?;
+        // }
 
         let pb = match ctx.state.read().unwrap().progress.as_ref() {
             Some(progress) => Some(
@@ -153,15 +154,15 @@ impl Action for EnsureGitRepository {
     }
 }
 
-lazy_static! {
-
-    static ref CLONE_PROGRESS_STYLE: ProgressStyle = ProgressStyle
+static CLONE_PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
+    ProgressStyle
         ::with_template(
             "{spinner:.cyan} {prefix} [{bar:.green/yellow}] {msg}",
         ).unwrap()
         .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str())
-        .progress_chars(style::THIN_PROGRESS.as_str());
-}
+        .progress_chars(style::THIN_PROGRESS.as_str())
+});
+
 
 fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repository> {
     let mut cb = git2::RemoteCallbacks::new();

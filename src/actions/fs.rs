@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use globset::GlobBuilder;
 use indicatif::{ProgressBar, ProgressStyle};
 use symlink::symlink_file;
+use once_cell::sync::Lazy;
 
 use owo_colors::{OwoColorize, colors::*};
 use walkdir::WalkDir;
@@ -15,14 +16,12 @@ use crate::exec::{Action, Ctx};
 use crate::overlays;
 use crate::ui::{self, emojis, style};
 
-lazy_static! {
 
-    static ref SPINNER_STYLE: ProgressStyle = ProgressStyle
+static SPINNER_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
+    ProgressStyle
         ::with_template("{spinner:.cyan} {wide_msg}").unwrap()
-        .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str());
-        // .progress_chars(style::THIN_PROGRESS.as_str());
-
-}
+        .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str())
+});
 
 pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
     if let Some(overlay) = &ctx.overlay {
