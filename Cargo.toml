@@ -9,51 +9,50 @@ license = "MIT"
 
 
 [dependencies]
-dialoguer = "0.10.2"
-directories = "4.0.1"
-dirs = "4.0.0"
-globset = "0.4.8"
-normpath = "0.3.2"
+dialoguer = "0.10.4"
+directories = "5.0.0"
+dirs = "5.0.0"
+globset = "0.4.10"
+normpath = "1.1.0"
 symlink = "0.1.0"
-tera = "1.15.0"
-walkdir = "2.3.2"
-tokio = { version = "1.21.0", features = ["full"] }
-indicatif = "0.17.0"
-toml_edit = { version = "0.14.4", features = ["easy"] }
-git2 = "0.14.4"
-git2_credentials = "0.8.0"
-async-trait = "0.1.57"
+tera = "1.18.1"
+walkdir = "2.3.3"
+tokio = { version = "1.27.0", features = ["full"] }
+indicatif = "0.17.3"
+toml = { version = "0.7.3" }
+git2 = "0.16.1"
+git2_credentials = "0.11.0"
+async-trait = "0.1.68"
 # asyncgit = "0.20.1"
-console = "0.15.0"
-prs-lib = "0.3.2"
-keyring = "1.1.2"
-anyhow = "1.0.64"
-thiserror = "1.0.34"
-futures = "0.3.24"
-once_cell = "1.14.0"
+console = "0.15.5"
+# prs-lib = "0.5.0"
+# keyring = "2.0.1"
+anyhow = "1.0.70"
+thiserror = "1.0.40"
+futures = "0.3.28"
+once_cell = "1.17.1"
+display_tree = "1.1.2"
 
 [dependencies.clap]
 features = ["derive", "env", "unicode", "cargo"]
-version = "3.1.18"
+version = "4.2.2"
 
 [dependencies.config]
 features = ["json", "yaml", "toml"]
-version = "0.13.1"
+version = "0.13.3"
 
-[dependencies.owo-colors]
-features = ["supports-colors"]
-version = "3.4.0"
+[dependencies.gix]
+version = "0.43.1"
+features = ["blocking-network-client", "blocking-http-transport-curl"]
 
 [dependencies.serde]
 features = ["derive"]
-version = "1.0.137"
+version = "1.0.160"
 
 [dev-dependencies]
-rstest = "0.13.0"
-trycmd = "0.13.4"
-
-[features]
-
-
-[patch.crates-io]
-indicatif = { git = 'https://github.com/console-rs/indicatif' }
+assert_cmd = { version = "2.0.11", features = ["color", "color-auto"] }
+assert_fs = { version = "1.0.13", features = ["color", "color-auto"] }
+dir-diff = "0.3.2"
+predicates = { version = "3.0.3", features = ["color"] }
+rstest = "0.17.0"
+trycmd = "0.14.12"

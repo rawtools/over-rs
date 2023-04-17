@@ -1,13 +1,12 @@
 use std::path::PathBuf;
 
 use clap::Args;
-use owo_colors::{OwoColorize, colors::*};
 
 use anyhow::Result;
 use crate::cli::CLI;
 use crate::exec::{Context};
 use crate::overlays::Repository;
-use crate::ui::emojis;
+use crate::ui::{emojis, style};
 
 #[derive(Args, Debug)]
 pub struct Params {
@@ -44,30 +43,30 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     
     println!("{} {} {} {} {}", 
         emojis::PACKAGE,
-        "Applying overlay".fg::<White>().bold(), 
-        overlay.name.fg::<White>().bold().italic(),
-        "to".fg::<White>().bold(), 
-        target.to_str().unwrap().fg::<White>().bold().italic(),
+        style::white_b("Applying overlay"), 
+        style::white_bi(&overlay.name),
+        style::white_b("to"), 
+        style::white_bi(target.to_str().unwrap()),
     );
 
     let result = overlay.apply_to(&ctx, &target).await;
     if let Err(e) = result {
         println!("{} {} {} {} {}", 
             emojis::CROSSMARK,
-            "Failed to apply overlay".fg::<White>().bold(), 
-            overlay.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(), 
-            target.to_str().unwrap().fg::<White>().bold().italic(),
+            style::white_b("Failed to apply overlay"), 
+            style::white_bi(overlay.name),
+            style::white_b("to"), 
+            style::white_bi(target.to_str().unwrap()),
         );
         println!("{}", e);
     } else {
         println!("{} {} {} {} {} {}", 
             emojis::SPARKLE,
-            "Applied overlay".fg::<White>().bold(), 
-            overlay.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(), 
-            target.to_str().unwrap().fg::<White>().bold().italic(),
-            "with success".fg::<White>().bold(), 
+            style::white_b("Applied overlay"), 
+            style::white_bi(&overlay.name),
+            style::white_b("to"), 
+            style::white_bi(target.to_str().unwrap()),
+            style::white_b("with success"), 
         );
     };
 

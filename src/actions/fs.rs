@@ -9,7 +9,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use symlink::symlink_file;
 use once_cell::sync::Lazy;
 
-use owo_colors::{OwoColorize, colors::*};
 use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
@@ -27,7 +26,7 @@ pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
     if let Some(overlay) = &ctx.overlay {
         ui::info(format!("{} {}",
             emojis::LINK,
-            style::WHITE.apply_to("Linking files"), 
+            style::white("Linking files"), 
         ))?;
         
         let progress = ProgressBar::new_spinner().with_style(SPINNER_STYLE.clone()).with_message("");
@@ -89,16 +88,16 @@ impl Action for EnsureLink {
             // See:  
             //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
             //  - https://github.com/rust-lang/rfcs/issues/2208
-            let rel_path = self.source.to_str().unwrap().strip_prefix(&overlay.root.to_str().unwrap()).unwrap();
+            let rel_path = self.source.to_str().unwrap().strip_prefix(overlay.root.to_str().unwrap()).unwrap();
             let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
             println!("{} {} {}{} {} {}{}{}",
                 emojis::LINK, 
-                "link:".fg::<White>(),
-                "{".fg::<White>(), 
+                style::white("link:"),
+                style::white("{"), 
                 overlay.root.display(),
-                "->".fg::<White>(),
+                style::white("->"),
                 target_root,
-                "}".fg::<White>(),
+                style::white("}"),
                 rel_path,
             )
         }
@@ -108,10 +107,8 @@ impl Action for EnsureLink {
             if src != self.source {
                 // TODO: handle links exsists
             }
-        } else {
-            if !ctx.dry_run {
-                symlink_file(self.source.as_path(), self.target.as_path())?;
-            }
+        } else if !ctx.dry_run {
+            symlink_file(self.source.as_path(), self.target.as_path())?;
         }
 
 
@@ -143,7 +140,7 @@ impl Action for EnsureDir {
         if ctx.verbose || ctx.dry_run {
             println!("{} {} {}", 
                 emojis::DIRECTORY,
-                "create directory:".fg::<White>(), 
+                style::white("create directory:"), 
                 self.path.display(),
             )
         }

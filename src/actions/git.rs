@@ -2,6 +2,9 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+
+use gix;
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::future::join_all;
@@ -9,7 +12,6 @@ use git2::{Progress, Repository};
 use git2_credentials::CredentialHandler;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use once_cell::sync::Lazy;
-use owo_colors::{colors::*, OwoColorize};
 use tokio::{
     spawn,
     sync::mpsc::{self, Sender},
@@ -27,7 +29,7 @@ pub async fn clone_repositories(ctx: Ctx, to: &Path) -> Result<()> {
             ui::info(format!(
                 "{} {}",
                 emojis::THREAD,
-                style::WHITE.apply_to("Cloning repositories"),
+                style::white("Cloning repositories"),
             ))?;
             let progress = MultiProgress::new();
 
@@ -63,7 +65,7 @@ impl EnsureGitRepository {
     fn short_name(&self) -> &'static str {
         let name = String::from(
             self.remote
-                .split("/")
+                .split('/')
                 .last()
                 .unwrap()
                 .trim_end_matches(".git"),
@@ -95,15 +97,12 @@ impl Action for EnsureGitRepository {
         //     ))?;
         // }
 
-        let pb = match ctx.state.read().unwrap().progress.as_ref() {
-            Some(progress) => Some(
+        let pb = ctx.state.read().unwrap().progress.as_ref().map(|progress| 
                 progress
                     .add(ProgressBar::new(100))
                     .with_style(CLONE_PROGRESS_STYLE.clone())
-                    .with_prefix(self.short_name()),
-            ),
-            _ => None,
-        };
+                    .with_prefix(self.short_name())
+        );
 
         if self.path.exists() {
             if let Some(p) = pb.as_ref() {
@@ -117,14 +116,37 @@ impl Action for EnsureGitRepository {
                 println!("Repository exists");
             }
             // Repository::open(self.path.as_path())?
-        } else {
-            if !ctx.dry_run {
+        } else if !ctx.dry_run {
                 let mut state = CloneState::default();
                 let url = self.remote.clone();
                 let into = self.path.clone();
+                // let mut prepare = git::prepare_clone(url, into)?;
+
+                // let prepare = git::clone::PrepareFetch::new(
+                //     url,
+                //     into,
+                //     git::create::Kind::WithWorktree,
+                //     git::create::Options::default(),
+                //     git::open::Options::default(),
+                // ).unwrap();
+
+                // let (mut checkout, _out) =
+                //     prepare.fetch_then_checkout(git::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
+                // let (repo, _) = checkout.main_worktree(git::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
+
+                // let index = repo.index()?;
+                // assert_eq!(index.entries().len(), 1, "All entries are known as per HEAD tree");
+
+                // let work_dir = repo.work_dir().expect("non-bare");
+                // for entry in index.entries() {
+                //     let entry_path = work_dir.join(git_path::from_bstr(entry.path(&index)));
+                //     assert!(entry_path.is_file(), "{:?} not found on disk", entry_path)
+                // }
+
+
                 let (tx, mut rx) = mpsc::channel(100);
                 let tx = Arc::new(tx);
-                let task = spawn_blocking(move || clone(&url, &into, &tx));
+                let task = spawn_blocking(move || clone2(&url, &into, &tx));
 
                 while let Some(msg) = rx.recv().await {
                     match msg {
@@ -142,12 +164,10 @@ impl Action for EnsureGitRepository {
                         p.abandon_with_message(format!("{} Failed", emojis::CROSSMARK));
                     }
                     return Err(anyhow!(e));
-                } else {
-                    if let Some(p) = pb.as_ref() {
-                        p.finish_and_clear();
-                    }
+                } else if let Some(p) = pb.as_ref() {
+                    p.finish_and_clear();
                 }
-            }
+            
         };
 
         Ok(())
@@ -198,6 +218,77 @@ fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repos
         .fetch_options(fo)
         .with_checkout(co)
         .clone(url, dst)?;
+
+    Ok(repo)
+}
+
+
+fn clone2(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<gix::Repository> {
+
+    std::fs::create_dir_all(dst)?;
+    // println!("url: {:#?}", git::Url::from_bytes(url.try_into()?));
+    // let mut prepare = git::prepare_clone("https://github.com/noirbizarre/slides-paris.py/", dst)?;
+    let mut prepare = gix::prepare_clone(url, dst)?;
+    // let mut prepare = git::prepare_clone(url.try_into()?, dst)?;
+    println!("prepare ok");
+    // println!("{:#?}", prepare);
+    
+    // let mut prepare = git::clone::PrepareFetch::new(
+    //     url,
+    //     dst,
+    //     git::create::Kind::WithWorktree,
+    //     git::create::Options::default(),
+    //     git::open::Options::default(),
+    // ).unwrap();
+
+    let (mut checkout, _out) = prepare.fetch_then_checkout(gix::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
+    println!("checkout ok");
+    let (repo, _) = checkout.main_worktree(gix::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
+    println!("checkout main ok");
+
+    // let index = repo.index()?;
+    // assert_eq!(index.entries().len(), 1, "All entries are known as per HEAD tree");
+
+    // let work_dir = repo.work_dir().expect("non-bare");
+    // for entry in index.entries() {
+    //     let entry_path = work_dir.join(git_path::from_bstr(entry.path(&index)));
+    //     assert!(entry_path.is_file(), "{:?} not found on disk", entry_path)
+    // }
+
+
+    // let mut cb = git2::RemoteCallbacks::new();
+    // let git_config = git2::Config::open_default().unwrap();
+
+    // // Credentials management
+    // let mut ch = CredentialHandler::new(git_config);
+    // cb.credentials(move |url, username, allowed| ch.try_next_credential(url, username, allowed));
+    // cb.transfer_progress(|stats| {
+    //     let stats = CloneStats::from(stats);
+    //     progress.blocking_send(CloneMessage::Stats(stats)).unwrap();
+    //     true
+    // });
+
+    // let mut co = git2::build::CheckoutBuilder::new();
+    // co.progress(|path, cur, total| {
+    //     let prog = CloneProgress {
+    //         path: path.map(|p| p.to_path_buf()),
+    //         current: cur,
+    //         total,
+    //     };
+    //     progress.blocking_send(CloneMessage::Progress(prog)).unwrap();
+    // });
+
+    // // clone a repository
+    // let mut fo = git2::FetchOptions::new();
+    // fo.remote_callbacks(cb)
+    //     .download_tags(git2::AutotagOption::All)
+    //     .update_fetchhead(true);
+    // // std::fs::create_dir_all(&dst.as_ref()).unwrap();
+    
+    // let repo = git2::build::RepoBuilder::new()
+    //     .fetch_options(fo)
+    //     .with_checkout(co)
+    //     .clone(url, dst)?;
 
     Ok(repo)
 }

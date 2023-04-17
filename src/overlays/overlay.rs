@@ -13,6 +13,11 @@ use crate::exec::{self, Action, Ctx};
 
 use super::Repository;
 
+pub enum Strategy {
+    Symlink,
+    Copy,
+}
+
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Overlay {
@@ -60,7 +65,7 @@ impl Overlay {
             .set_override("root", root.to_str())?
             .set_default("target", "~")?
             .build()?;
-        
+
         Ok(s.try_deserialize()?)
     }
 
