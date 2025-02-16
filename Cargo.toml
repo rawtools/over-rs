@@ -42,7 +42,7 @@ features = ["json", "yaml", "toml"]
 version = "0.13.4"
 
 [dependencies.gix]
-version = "0.57.1"
+version = "0.70.0"
 features = ["blocking-network-client", "blocking-http-transport-curl"]
 
 [dependencies.serde]
