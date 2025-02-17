@@ -9,50 +9,50 @@ license = "MIT"
 
 
 [dependencies]
-dialoguer = "0.11.0"
-directories = "5.0.1"
-dirs = "5.0.1"
-globset = "0.4.14"
-normpath = "1.1.1"
-symlink = "0.1.0"
-tera = "1.19.1"
-walkdir = "2.4.0"
-tokio = { version = "1.35.1", features = ["full"] }
-indicatif = "0.17.7"
-toml = { version = "0.8.8" }
-git2 = "0.16.1"
-git2_credentials = "0.11.0"
-async-trait = "0.1.77"
+dialoguer = "0.11"
+directories = "6.0"
+dirs = "6.0"
+globset = "0.4"
+normpath = "1.3"
+symlink = "0.1"
+tera = "1.20"
+walkdir = "2"
+tokio = { version = "1.43", features = ["full"] }
+indicatif = "0.17"
+toml = "0.8"
+git2 = "0.16"
+git2_credentials = "0.11"
+async-trait = "0.1"
 # asyncgit = "0.20.1"
-console = "0.15.7"
+console = "0.15"
 # prs-lib = "0.5.0"
 # keyring = "2.0.1"
-anyhow = "1.0.79"
-thiserror = "1.0.56"
-futures = "0.3.30"
-once_cell = "1.19.0"
-display_tree = "1.1.2"
+anyhow = "1.0"
+thiserror = "2.0"
+futures = "0.3"
+once_cell = "1.20"
+display_tree = "1.1"
 
 [dependencies.clap]
 features = ["derive", "env", "unicode", "cargo"]
-version = "4.4.12"
+version = "4.5"
 
 [dependencies.config]
 features = ["json", "yaml", "toml"]
-version = "0.13.4"
+version = "0.15"
 
 [dependencies.gix]
-version = "0.70.0"
+version = "0.70"
 features = ["blocking-network-client", "blocking-http-transport-curl"]
 
 [dependencies.serde]
 features = ["derive"]
-version = "1.0.194"
+version = "1.0"
 
 [dev-dependencies]
-assert_cmd = { version = "2.0.12", features = ["color", "color-auto"] }
-assert_fs = { version = "1.1.0", features = ["color", "color-auto"] }
-dir-diff = "0.3.3"
-predicates = { version = "3.0.4", features = ["color"] }
-rstest = "0.17.0"
-trycmd = "0.14.19"
+assert_cmd = { version = "2.0", features = ["color", "color-auto"] }
+assert_fs = { version = "1.1", features = ["color", "color-auto"] }
+dir-diff = "0.3"
+predicates = { version = "3.0", features = ["color"] }
+rstest = "0.17"
+trycmd = "0.14"
