@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use clap::Args;
-use owo_colors::{OwoColorize, colors::*};
 
 use anyhow::Result;
 use crate::cli::CLI;

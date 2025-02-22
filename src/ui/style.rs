@@ -1,8 +1,7 @@
-use console::Style;
+use console::{style, StyledObject};
 
 use once_cell::sync::Lazy;
 
-pub static WHITE: Lazy<Style> = Lazy::new(|| Style::new().white());
 
 pub static TICK_CHARS_BRAILLE_4_6_DOWN: Lazy<String> = Lazy::new(|| String::from("⠶⢲⣰⣤⣆⡖"));
 pub static TICK_CHARS_BRAILLE_4_6_UP: Lazy<String> = Lazy::new(|| String::from("⠛⠹⠼⠶⠧⠏"));
@@ -19,6 +18,14 @@ pub static DOTS_4: Lazy<String> = Lazy::new(|| String::from("::"));
 // }
 
 
-// pub fn spinner() ->  {
-    
-// }
+pub fn white<D>(value: D) -> StyledObject<D> {
+    style(value).white()
+}
+
+pub fn white_b<D>(value: D) -> StyledObject<D> {
+    white(value).bold()
+}
+
+pub fn white_bi<D>(value: D) -> StyledObject<D> {
+    white_b(value).italic()
+}

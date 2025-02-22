@@ -26,7 +26,7 @@ pub async fn clone_repositories(ctx: Ctx, overlay: &Overlay, to: &Path) -> Resul
         ui::info(format!(
             "{} {}",
             emojis::THREAD,
-            style::WHITE.apply_to("Cloning repositories"),
+            style::white("Cloning repositories"),
         ))?;
         let progress = MultiProgress::new();
 

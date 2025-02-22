@@ -9,7 +9,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use symlink::symlink_file;
 use once_cell::sync::Lazy;
 
-use owo_colors::{OwoColorize, colors::*};
 use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
@@ -26,7 +25,7 @@ static SPINNER_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
 pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
     ui::info(format!("{} {}",
         emojis::LINK,
-        style::WHITE.apply_to("Linking files"), 
+        style::white("Linking files"), 
     ))?;
     
     let progress = ProgressBar::new_spinner().with_style(SPINNER_STYLE.clone()).with_message("");
@@ -91,12 +90,12 @@ impl Action for EnsureLink {
             let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
             println!("{} {} {}{} {} {}{}{}",
                 emojis::LINK, 
-                "link:".fg::<White>(),
-                "{".fg::<White>(), 
+                style::white("link:"),
+                style::white("{"), 
                 self.overlay.root.display(),
-                "->".fg::<White>(),
+                style::white("->"),
                 target_root,
-                "}".fg::<White>(),
+                style::white("}"),
                 rel_path,
             )
         }
@@ -139,7 +138,7 @@ impl Action for EnsureDir {
         if ctx.verbose || ctx.dry_run {
             println!("{} {} {}", 
                 emojis::DIRECTORY,
-                "create directory:".fg::<White>(), 
+                style::white("create directory:"), 
                 self.path.display(),
             )
         }

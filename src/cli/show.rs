@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
 use clap::Args;
-use owo_colors::{OwoColorize, colors::*};
 
 use anyhow::Result;
 use crate::cli::CLI;
 use crate::overlays::Repository;
+use crate::ui::style;
 
 #[derive(Args, Debug)]
 pub struct Params {
@@ -23,7 +23,7 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     let repo = Repository::new(PathBuf::from(&cli.home));
     let overlay = repo.get(&args.name)?;
     
-    println!("🌟 {} 🌟", overlay.name.fg::<White>().bold());
+    println!("🌟 {} 🌟", style::white_b(&overlay.name));
     println!("overlay: {:#?}", overlay);
     Ok(())
 }

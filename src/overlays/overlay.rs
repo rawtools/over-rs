@@ -4,14 +4,13 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use config::{Config, File, FileFormat, FileSourceFile};
 use dirs::home_dir;
-use owo_colors::{colors::*, OwoColorize};
 use serde::{Deserialize, Serialize};
 
 use tera::{Context, Tera};
 
 use crate::actions::{self, EnsureDir};
 use crate::exec::{self, Action, Ctx};
-use crate::ui::emojis;
+use crate::ui::{emojis, style};
 
 use super::Repository;
 
@@ -115,10 +114,10 @@ impl Overlay {
         println!(
             "{} {} {} {} {}",
             emojis::PACKAGE,
-            "Applying overlay".fg::<White>().bold(),
-            self.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(),
-            target_root.to_str().unwrap().fg::<White>().bold().italic(),
+            style::white_b("Applying overlay"),
+            style::white_bi(&self.name),
+            style::white_b("to"),
+            style::white_bi(target_root.to_str().unwrap()),
         );
         if let Some(uses) = &self.uses {
             for name in uses {
@@ -132,11 +131,11 @@ impl Overlay {
 
         println!("{} {} {} {} {} {}", 
             emojis::SPARKLE,
-            "Applied overlay".fg::<White>().bold(), 
-            self.name.fg::<White>().bold().italic(),
-            "to".fg::<White>().bold(), 
-            target_root.to_str().unwrap().fg::<White>().bold().italic(),
-            "with success".fg::<White>().bold(), 
+            style::white_b("Applied overlay"), 
+            style::white_bi(&self.name),
+            style::white_b("to"), 
+            style::white_bi(target_root.to_str().unwrap()),
+            style::white_b("with success"), 
         );
 
         Ok(())
