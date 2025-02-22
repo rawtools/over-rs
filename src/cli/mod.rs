@@ -23,7 +23,6 @@ pub struct CLI {
         required = false,
         env = "OVER_HOME",
         help = "Configuration and overlays root",
-        parse(from_os_str),
     )]
     home: PathBuf,
 
