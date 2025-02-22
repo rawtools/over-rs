@@ -2,30 +2,30 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use dirs::home_dir;
 use config::{Config, File, FileFormat, FileSourceFile};
+use dirs::home_dir;
+use owo_colors::{colors::*, OwoColorize};
 use serde::{Deserialize, Serialize};
 
 use tera::{Context, Tera};
 
-use crate::actions::{EnsureDir, self};
+use crate::actions::{self, EnsureDir};
 use crate::exec::{self, Action, Ctx};
+use crate::ui::emojis;
 
 use super::Repository;
-
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Overlay {
     pub name: String,
-    
+
     pub root: PathBuf,
 
     // #[serde(skip)]
     // pub parent: Option<Box<Overlay>>,
-    
+
     // // #[serde(default = "default_is_not_parent")]
     // // pub parent: bool,
-
     pub description: Option<String>,
 
     pub target: String,
@@ -39,17 +39,19 @@ pub struct Overlay {
     pub install: Option<HashMap<String, Vec<String>>>,
 }
 
-
 impl Overlay {
     pub fn new(repository: &Repository, root: &Path) -> Result<Self> {
-        let name = root.strip_prefix(repository.root.as_path())?.to_str().unwrap();
+        let name = root
+            .strip_prefix(repository.root.as_path())?
+            .to_str()
+            .unwrap();
         let mut sources: Vec<File<FileSourceFile, FileFormat>> = Vec::new();
         let mut dir = root;
         loop {
             let basename = dir.join("over");
             sources.push(File::with_name(basename.to_str().unwrap()).required(dir == root));
             if dir == repository.root {
-                break
+                break;
             }
             dir = dir.parent().unwrap();
         }
@@ -60,18 +62,16 @@ impl Overlay {
             .set_override("root", root.to_str())?
             .set_default("target", "~")?
             .build()?;
-        
+
         Ok(s.try_deserialize()?)
     }
 
     pub fn resolve_target(&self, ctx: &exec::Context) -> Result<PathBuf> {
-        let path = PathBuf::from(
-            &Tera::one_off(
-                self.target.as_str(), 
-                &Context::from_serialize(ctx)?,
-                true,
-            )?
-        );
+        let path = PathBuf::from(&Tera::one_off(
+            self.target.as_str(),
+            &Context::from_serialize(ctx)?,
+            true,
+        )?);
         // if !path.starts_with("~") {
         //     return Ok(path);
         // }
@@ -92,29 +92,52 @@ impl Overlay {
         Ok(match path.to_str().unwrap() {
             p if !p.starts_with("~") => path,
             "~" => home_dir().unwrap(),
-            _ => home_dir().map(|mut h| {
-                if h == Path::new("/") {
-                    // Corner case: `h` root directory;
-                    // don't prepend extra `/`, just drop the tilde.
-                    path.strip_prefix("~").unwrap().to_path_buf()
-                } else {
-                    h.push(path.strip_prefix("~/").unwrap());
-                    h
-                }
-            }).unwrap(),
+            _ => home_dir()
+                .map(|mut h| {
+                    if h == Path::new("/") {
+                        // Corner case: `h` root directory;
+                        // don't prepend extra `/`, just drop the tilde.
+                        path.strip_prefix("~").unwrap().to_path_buf()
+                    } else {
+                        h.push(path.strip_prefix("~/").unwrap());
+                        h
+                    }
+                })
+                .unwrap(),
         })
-            
     }
-
 
     pub async fn apply_to(&self, ctx: &Ctx, target_root: &Path) -> Result<()> {
         if !target_root.exists() {
             let mkdir = EnsureDir::new(target_root.to_path_buf());
             mkdir.execute(ctx.clone()).await?;
         }
+        println!(
+            "{} {} {} {} {}",
+            emojis::PACKAGE,
+            "Applying overlay".fg::<White>().bold(),
+            self.name.fg::<White>().bold().italic(),
+            "to".fg::<White>().bold(),
+            target_root.to_str().unwrap().fg::<White>().bold().italic(),
+        );
+        if let Some(uses) = &self.uses {
+            for name in uses {
+                let overlay = ctx.repository.get(name).expect("failed");
+                let _ = Box::pin(overlay.apply_to(ctx, target_root)).await;
+            }
+        }
 
-        actions::git::clone_repositories(ctx.clone(), target_root).await?;
-        actions::fs::link(ctx.clone(), target_root).await?;
+        actions::git::clone_repositories(ctx.clone(), self, target_root).await?;
+        actions::fs::link(ctx.clone(), self, target_root).await?;
+
+        println!("{} {} {} {} {} {}", 
+            emojis::SPARKLE,
+            "Applied overlay".fg::<White>().bold(), 
+            self.name.fg::<White>().bold().italic(),
+            "to".fg::<White>().bold(), 
+            target_root.to_str().unwrap().fg::<White>().bold().italic(),
+            "with success".fg::<White>().bold(), 
+        );
 
         Ok(())
     }

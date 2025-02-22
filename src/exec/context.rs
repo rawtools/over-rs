@@ -17,7 +17,7 @@ pub struct Context {
     /// Toggle verbose output
     pub verbose: bool,
     
-    pub repository: Option<Repository>,
+    pub repository: Repository,
     
     pub overlay: Option<Overlay>,
     
@@ -49,7 +49,7 @@ impl Context {
         dry_run: bool,
         debug: bool,
         verbose: bool,
-        repository: Option<Repository>,
+        repository: Repository,
         overlay: Option<Overlay>,
     ) -> Arc<Self> {
         Arc::new(

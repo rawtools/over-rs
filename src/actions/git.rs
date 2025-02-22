@@ -9,43 +9,41 @@ use git2::{Progress, Repository};
 use git2_credentials::CredentialHandler;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use once_cell::sync::Lazy;
-use owo_colors::{colors::*, OwoColorize};
 use tokio::{
     spawn,
     sync::mpsc::{self, Sender},
     task::spawn_blocking,
 };
 
+use crate::overlays::Overlay;
 use crate::{
     exec::{Action, Ctx},
     ui::{self, emojis, style},
 };
 
-pub async fn clone_repositories(ctx: Ctx, to: &Path) -> Result<()> {
-    if let Some(overlay) = &ctx.overlay {
-        if let Some(git_repos) = &overlay.git {
-            ui::info(format!(
-                "{} {}",
-                emojis::THREAD,
-                style::WHITE.apply_to("Cloning repositories"),
-            ))?;
-            let progress = MultiProgress::new();
+pub async fn clone_repositories(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
+    if let Some(git_repos) = &overlay.git {
+        ui::info(format!(
+            "{} {}",
+            emojis::THREAD,
+            style::WHITE.apply_to("Cloning repositories"),
+        ))?;
+        let progress = MultiProgress::new();
 
-            {
-                let mut state = ctx.state.write().unwrap();
-                state.progress = Some(progress);
-            }
-            let _clones = join_all(git_repos.iter().map(|(path, url)| {
-                let target = to.join(path);
-                let url = url.to_string();
-                let ctx = ctx.clone();
-                spawn(async move {
-                    let action = EnsureGitRepository::new(target, url.to_string());
-                    action.execute(ctx).await
-                })
-            }))
-            .await;
-        };
+        {
+            let mut state = ctx.state.write().unwrap();
+            state.progress = Some(progress);
+        }
+        let _clones = join_all(git_repos.iter().map(|(path, url)| {
+            let target = to.join(path);
+            let url = url.to_string();
+            let ctx = ctx.clone();
+            spawn(async move {
+                let action = EnsureGitRepository::new(target, url.to_string());
+                action.execute(ctx).await
+            })
+        }))
+        .await;
     };
     Ok(())
 }
@@ -132,7 +130,7 @@ impl Action for EnsureGitRepository {
                         CloneMessage::Stats(s) => state.stats = s,
                     }
                     if let Some(p) = pb.as_ref() {
-                        state.update_bar(p);
+                        let _ = state.update_bar(p);
                     }
                 }
 

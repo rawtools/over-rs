@@ -13,7 +13,7 @@ use owo_colors::{OwoColorize, colors::*};
 use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
-use crate::overlays;
+use crate::overlays::{self, Overlay};
 use crate::ui::{self, emojis, style};
 
 
@@ -23,50 +23,50 @@ static SPINNER_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
         .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str())
 });
 
-pub async fn link(ctx: Ctx, to: &Path) -> Result<()> {
-    if let Some(overlay) = &ctx.overlay {
-        ui::info(format!("{} {}",
-            emojis::LINK,
-            style::WHITE.apply_to("Linking files"), 
-        ))?;
-        
-        let progress = ProgressBar::new_spinner().with_style(SPINNER_STYLE.clone()).with_message("");
-        
-        let exclude = GlobBuilder::new(&overlays::GLOB_PATTERN).literal_separator(true).build()?.compile_matcher();
-        let files = WalkDir::new(&overlay.root)
-            .min_depth(1)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| !exclude.is_match(e.path()));
+pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
+    ui::info(format!("{} {}",
+        emojis::LINK,
+        style::WHITE.apply_to("Linking files"), 
+    ))?;
     
-        for file in files {
-            // progress.tick();
-            let rel_path = file.path().strip_prefix(&overlay.root)?;
-            let target = to.join(rel_path);
-            let path = file.path();
-            let action: Box<dyn Action> = match () {
-                _ if path.is_dir() => Box::new(EnsureDir::new(target)),
-                _ if path.is_file() => Box::new(EnsureLink::new(file.clone().into_path(), target)),
-                _ => Box::new(EnsureLink::new(file.clone().into_path(), target)),
-            };
-            progress.set_message(format!("{}", action));
-            action.execute(ctx.clone()).await?;
-        }
-        // progress.finish_with_message("DOne");
-        progress.finish_and_clear();
-    };
+    let progress = ProgressBar::new_spinner().with_style(SPINNER_STYLE.clone()).with_message("");
+    
+    let exclude = GlobBuilder::new(&overlays::GLOB_PATTERN).literal_separator(true).build()?.compile_matcher();
+    let files = WalkDir::new(&overlay.root)
+        .min_depth(1)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| !exclude.is_match(e.path()));
+
+    for file in files {
+        // progress.tick();
+        let rel_path = file.path().strip_prefix(&overlay.root)?;
+        let target = to.join(rel_path);
+        let path = file.path();
+        let action: Box<dyn Action> = match () {
+            _ if path.is_dir() => Box::new(EnsureDir::new(target)),
+            _ if path.is_file() => Box::new(EnsureLink::new(overlay.clone(), file.clone().into_path(), target)),
+            _ => Box::new(EnsureLink::new(overlay.clone(), file.clone().into_path(), target)),
+        };
+        progress.set_message(format!("{}", action));
+        action.execute(ctx.clone()).await?;
+    }
+    // progress.finish_with_message("DOne");
+    progress.finish_and_clear();
     Ok(())
 }
 
 
 pub struct EnsureLink {
+    pub overlay: Overlay,
     pub source: PathBuf,
     pub target: PathBuf,
 }
 
 impl EnsureLink {
-    pub fn new(source: PathBuf, target: PathBuf) -> Self {
+    pub fn new(overlay: Overlay, source: PathBuf, target: PathBuf) -> Self {
         Self {
+            overlay,
             source,
             target,
         }
@@ -82,20 +82,18 @@ impl fmt::Display for EnsureLink {
 #[async_trait]
 impl Action for EnsureLink {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
-        let overlay = ctx.overlay.as_ref().unwrap();
-
         if ctx.verbose || ctx.dry_run {
             // We operate on string as path normalization is broken in rust
             // See:  
             //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
             //  - https://github.com/rust-lang/rfcs/issues/2208
-            let rel_path = self.source.to_str().unwrap().strip_prefix(&overlay.root.to_str().unwrap()).unwrap();
+            let rel_path = self.source.to_str().unwrap().strip_prefix(self.overlay.root.to_str().unwrap()).unwrap();
             let target_root = self.target.to_str().unwrap().strip_suffix(rel_path).unwrap();
             println!("{} {} {}{} {} {}{}{}",
                 emojis::LINK, 
                 "link:".fg::<White>(),
                 "{".fg::<White>(), 
-                overlay.root.display(),
+                self.overlay.root.display(),
                 "->".fg::<White>(),
                 target_root,
                 "}".fg::<White>(),
@@ -108,10 +106,8 @@ impl Action for EnsureLink {
             if src != self.source {
                 // TODO: handle links exsists
             }
-        } else {
-            if !ctx.dry_run {
-                symlink_file(self.source.as_path(), self.target.as_path())?;
-            }
+        } else if !ctx.dry_run {
+            symlink_file(self.source.as_path(), self.target.as_path())?;
         }
 
 

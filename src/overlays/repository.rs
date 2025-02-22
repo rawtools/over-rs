@@ -11,7 +11,7 @@ use super::overlay::Overlay;
 
 
 /// Manage all overlays
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct Repository {
     /// Repository root directory
     pub root: PathBuf,
