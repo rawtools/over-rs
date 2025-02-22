@@ -17,4 +17,5 @@ pub mod repository;
 pub use overlay::Overlay;
 pub use repository::Repository;
 
-pub static GLOB_PATTERN: Lazy<String> = Lazy::new(|| format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(",")));
+pub static GLOB_PATTERN: Lazy<String> =
+    Lazy::new(|| format!("**/{}.{{{}}}", BASENAME, EXTENSIONS.join(",")));

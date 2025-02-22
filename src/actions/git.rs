@@ -93,15 +93,12 @@ impl Action for EnsureGitRepository {
         //     ))?;
         // }
 
-        let pb = match ctx.state.read().unwrap().progress.as_ref() {
-            Some(progress) => Some(
-                progress
-                    .add(ProgressBar::new(100))
-                    .with_style(CLONE_PROGRESS_STYLE.clone())
-                    .with_prefix(self.short_name()),
-            ),
-            _ => None,
-        };
+        let pb = ctx.state.read().unwrap().progress.as_ref().map(|progress| {
+            progress
+                .add(ProgressBar::new(100))
+                .with_style(CLONE_PROGRESS_STYLE.clone())
+                .with_prefix(self.short_name())
+        });
 
         if self.path.exists() {
             if let Some(p) = pb.as_ref() {
@@ -115,36 +112,32 @@ impl Action for EnsureGitRepository {
                 println!("Repository exists");
             }
             // Repository::open(self.path.as_path())?
-        } else {
-            if !ctx.dry_run {
-                let mut state = CloneState::default();
-                let url = self.remote.clone();
-                let into = self.path.clone();
-                let (tx, mut rx) = mpsc::channel(100);
-                let tx = Arc::new(tx);
-                let task = spawn_blocking(move || clone(&url, &into, &tx));
+        } else if !ctx.dry_run {
+            let mut state = CloneState::default();
+            let url = self.remote.clone();
+            let into = self.path.clone();
+            let (tx, mut rx) = mpsc::channel(100);
+            let tx = Arc::new(tx);
+            let task = spawn_blocking(move || clone(&url, &into, &tx));
 
-                while let Some(msg) = rx.recv().await {
-                    match msg {
-                        CloneMessage::Progress(pr) => state.progress = pr,
-                        CloneMessage::Stats(s) => state.stats = s,
-                    }
-                    if let Some(p) = pb.as_ref() {
-                        let _ = state.update_bar(p);
-                    }
+            while let Some(msg) = rx.recv().await {
+                match msg {
+                    CloneMessage::Progress(pr) => state.progress = pr,
+                    CloneMessage::Stats(s) => state.stats = s,
                 }
+                if let Some(p) = pb.as_ref() {
+                    let _ = state.update_bar(p);
+                }
+            }
 
-                if let Err(e) = task.await? {
-                    if let Some(p) = pb.as_ref() {
-                        p.println(format!("{} {}", emojis::CROSSMARK, e));
-                        p.abandon_with_message(format!("{} Failed", emojis::CROSSMARK));
-                    }
-                    return Err(anyhow!(e));
-                } else {
-                    if let Some(p) = pb.as_ref() {
-                        p.finish_and_clear();
-                    }
+            if let Err(e) = task.await? {
+                if let Some(p) = pb.as_ref() {
+                    p.println(format!("{} {}", emojis::CROSSMARK, e));
+                    p.abandon_with_message(format!("{} Failed", emojis::CROSSMARK));
                 }
+                return Err(anyhow!(e));
+            } else if let Some(p) = pb.as_ref() {
+                p.finish_and_clear();
             }
         };
 
@@ -153,14 +146,11 @@ impl Action for EnsureGitRepository {
 }
 
 static CLONE_PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
-    ProgressStyle
-        ::with_template(
-            "{spinner:.cyan} {prefix} [{bar:.green/yellow}] {msg}",
-        ).unwrap()
+    ProgressStyle::with_template("{spinner:.cyan} {prefix} [{bar:.green/yellow}] {msg}")
+        .unwrap()
         .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str())
         .progress_chars(style::THIN_PROGRESS.as_str())
 });
-
 
 fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repository> {
     let mut cb = git2::RemoteCallbacks::new();
@@ -182,7 +172,9 @@ fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repos
             current: cur,
             total,
         };
-        progress.blocking_send(CloneMessage::Progress(prog)).unwrap();
+        progress
+            .blocking_send(CloneMessage::Progress(prog))
+            .unwrap();
     });
 
     // clone a repository
@@ -191,7 +183,7 @@ fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repos
         .download_tags(git2::AutotagOption::All)
         .update_fetchhead(true);
     // std::fs::create_dir_all(&dst.as_ref()).unwrap();
-    
+
     let repo = git2::build::RepoBuilder::new()
         .fetch_options(fo)
         .with_checkout(co)

@@ -3,26 +3,24 @@ use std::sync::{Arc, RwLock};
 use indicatif::MultiProgress;
 use serde::Serialize;
 
-use crate::overlays::{Repository, Overlay};
+use crate::overlays::{Overlay, Repository};
 
 #[derive(Debug, Default, Serialize)]
 pub struct Context {
-    
     /// Run without applying changes
     pub dry_run: bool,
-    
+
     /// Toggle debug traces,
     pub debug: bool,
-    
+
     /// Toggle verbose output
     pub verbose: bool,
-    
-    pub repository: Repository,
-    
-    pub overlay: Option<Overlay>,
-    
-    pub state: RwLock<State>,
 
+    pub repository: Repository,
+
+    pub overlay: Option<Overlay>,
+
+    pub state: RwLock<State>,
     // pub progress: Option<MultiProgress>,
 }
 
@@ -34,12 +32,12 @@ pub struct State {
 
 // #[derive(Debug, Default, Serialize)]
 // pub struct Channel<T> {
-    //     // pub tx: Sender<T>,
+//     // pub tx: Sender<T>,
 //     // pub rx: Receiver<T>,
 // }
 
 // // impl Default for Context {
-    // //     fn default() -> Self {
+// //     fn default() -> Self {
 // //         Self { dry_run: Default::default(), debug: Default::default(), verbose: Default::default(), repository: Default::default(), overlay: Default::default() }
 // //     }
 // // }
@@ -52,20 +50,16 @@ impl Context {
         repository: Repository,
         overlay: Option<Overlay>,
     ) -> Arc<Self> {
-        Arc::new(
-            Self {
-                dry_run: dry_run,
-                debug: debug,
-                verbose: verbose,
-                repository: repository,
-                overlay: overlay,
-                state: RwLock::new(State::default()),
-                // progress: None,
-            }
-        )
-    } 
+        Arc::new(Self {
+            dry_run,
+            debug,
+            verbose,
+            repository,
+            overlay,
+            state: RwLock::new(State::default()),
+            // progress: None,
+        })
+    }
 }
 
-
 pub type Ctx = Arc<Context>;
-

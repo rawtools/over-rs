@@ -3,6 +3,4 @@ pub mod style;
 
 pub mod log;
 
-pub use log::{
-    info,
-};
+pub use log::info;

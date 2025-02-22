@@ -1,14 +1,13 @@
 use std::path::PathBuf;
 
+use globset::GlobBuilder;
 use serde::Serialize;
 use walkdir::WalkDir;
-use globset::GlobBuilder;
 
 use anyhow::Result;
 
-use super::pattern;
 use super::overlay::Overlay;
-
+use super::pattern;
 
 /// Manage all overlays
 #[derive(Debug, Default, Serialize)]
@@ -24,14 +23,16 @@ pub struct Repository {
 // }
 
 impl Repository {
-
     pub fn new(root: PathBuf) -> Self {
         Self { root }
     }
 
     /// Returns a list of all overlays in the repository
     pub fn overlays(&self) -> Result<Vec<Overlay>> {
-        let glob = GlobBuilder::new(&pattern()).literal_separator(true).build()?.compile_matcher();
+        let glob = GlobBuilder::new(&pattern())
+            .literal_separator(true)
+            .build()?
+            .compile_matcher();
 
         let mut dirs: Vec<PathBuf> = WalkDir::new(&self.root)
             .into_iter()
@@ -42,17 +43,14 @@ impl Repository {
 
         dirs.sort();
 
-        Ok(
-            dirs.iter().enumerate()
-            .filter_map(|(idx, dir)| {
-                match dirs.get(idx + 1) {
-                    Some(next) if next.starts_with(&dir) => None,
-                    _ => Some(Overlay::new(self, &dir).expect("failed")),
-                }
+        Ok(dirs
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, dir)| match dirs.get(idx + 1) {
+                Some(next) if next.starts_with(dir) => None,
+                _ => Some(Overlay::new(self, dir).expect("failed")),
             })
-            .collect()
-        )
-
+            .collect())
     }
 
     /// Get a repository by its name/relative path

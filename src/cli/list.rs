@@ -2,10 +2,9 @@ use std::path::PathBuf;
 
 use clap::Args;
 
-use anyhow::Result;
 use crate::cli::CLI;
 use crate::overlays::Repository;
-
+use anyhow::Result;
 
 #[derive(Args, Debug)]
 pub struct Params {
@@ -18,17 +17,15 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
         println!("{:#?}", cli);
         println!("{:#?}", args);
     }
-    
+
     // let repo = Repository::new( PathBuf::from(&cli.home) );
 
-    for overlay in Repository::new( PathBuf::from(&cli.home) ).overlays()? {
+    for overlay in Repository::new(PathBuf::from(&cli.home)).overlays()? {
         println!("{}", overlay.name);
     }
 
     Ok(())
 }
-
-
 
 // use termtree::Tree;
 

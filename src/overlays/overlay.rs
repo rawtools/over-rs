@@ -129,20 +129,21 @@ impl Overlay {
         actions::git::clone_repositories(ctx.clone(), self, target_root).await?;
         actions::fs::link(ctx.clone(), self, target_root).await?;
 
-        println!("{} {} {} {} {} {}", 
+        println!(
+            "{} {} {} {} {} {}",
             emojis::SPARKLE,
-            style::white_b("Applied overlay"), 
+            style::white_b("Applied overlay"),
             style::white_bi(&self.name),
-            style::white_b("to"), 
+            style::white_b("to"),
             style::white_bi(target_root.to_str().unwrap()),
-            style::white_b("with success"), 
+            style::white_b("with success"),
         );
 
         Ok(())
     }
 
     pub async fn apply(&self, ctx: &Ctx) -> Result<()> {
-        let target_root = self.resolve_target(&ctx)?;
+        let target_root = self.resolve_target(ctx)?;
         self.apply_to(ctx, &target_root).await
     }
 }
