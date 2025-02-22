@@ -8,8 +8,7 @@ use gix;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::future::join_all;
-use git2::{Progress, Repository};
-use git2_credentials::CredentialHandler;
+use git2::Progress;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use once_cell::sync::Lazy;
 use tokio::{
@@ -120,33 +119,9 @@ impl Action for EnsureGitRepository {
                 let mut state = CloneState::default();
                 let url = self.remote.clone();
                 let into = self.path.clone();
-                // let mut prepare = git::prepare_clone(url, into)?;
-
-                // let prepare = git::clone::PrepareFetch::new(
-                //     url,
-                //     into,
-                //     git::create::Kind::WithWorktree,
-                //     git::create::Options::default(),
-                //     git::open::Options::default(),
-                // ).unwrap();
-
-                // let (mut checkout, _out) =
-                //     prepare.fetch_then_checkout(git::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
-                // let (repo, _) = checkout.main_worktree(git::progress::Discard, &std::sync::atomic::AtomicBool::default())?;
-
-                // let index = repo.index()?;
-                // assert_eq!(index.entries().len(), 1, "All entries are known as per HEAD tree");
-
-                // let work_dir = repo.work_dir().expect("non-bare");
-                // for entry in index.entries() {
-                //     let entry_path = work_dir.join(git_path::from_bstr(entry.path(&index)));
-                //     assert!(entry_path.is_file(), "{:?} not found on disk", entry_path)
-                // }
-
-
                 let (tx, mut rx) = mpsc::channel(100);
                 let tx = Arc::new(tx);
-                let task = spawn_blocking(move || clone2(&url, &into, &tx));
+                let task = spawn_blocking(move || clone(&url, &into, &tx));
 
                 while let Some(msg) = rx.recv().await {
                     match msg {
@@ -184,46 +159,48 @@ static CLONE_PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
 });
 
 
-fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repository> {
-    let mut cb = git2::RemoteCallbacks::new();
-    let git_config = git2::Config::open_default().unwrap();
+// fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repository> {
+//     let mut cb = git2::RemoteCallbacks::new();
+//     let git_config = git2::Config::open_default().unwrap();
+//
+//     // Credentials management
+//     let mut ch = CredentialHandler::new(git_config);
+//     cb.credentials(move |url, username, allowed| ch.try_next_credential(url, username, allowed));
+//     cb.transfer_progress(|stats| {
+//         let stats = CloneStats::from(stats);
+//         progress.blocking_send(CloneMessage::Stats(stats)).unwrap();
+//         true
+//     });
+//
+//     let mut co = git2::build::CheckoutBuilder::new();
+//     co.progress(|path, cur, total| {
+//         let prog = CloneProgress {
+//             path: path.map(|p| p.to_path_buf()),
+//             current: cur,
+//             total,
+//         };
+//         progress.blocking_send(CloneMessage::Progress(prog)).unwrap();
+//     });
+//
+//     // clone a repository
+//     let mut fo = git2::FetchOptions::new();
+//     fo.remote_callbacks(cb)
+//         .download_tags(git2::AutotagOption::All)
+//         .update_fetchhead(true);
+//     // std::fs::create_dir_all(&dst.as_ref()).unwrap();
+//     
+//     let repo = git2::build::RepoBuilder::new()
+//         .fetch_options(fo)
+//         .with_checkout(co)
+//         .clone(url, dst)?;
+//
+//     Ok(repo)
+// }
 
-    // Credentials management
-    let mut ch = CredentialHandler::new(git_config);
-    cb.credentials(move |url, username, allowed| ch.try_next_credential(url, username, allowed));
-    cb.transfer_progress(|stats| {
-        let stats = CloneStats::from(stats);
-        progress.blocking_send(CloneMessage::Stats(stats)).unwrap();
-        true
-    });
 
-    let mut co = git2::build::CheckoutBuilder::new();
-    co.progress(|path, cur, total| {
-        let prog = CloneProgress {
-            path: path.map(|p| p.to_path_buf()),
-            current: cur,
-            total,
-        };
-        progress.blocking_send(CloneMessage::Progress(prog)).unwrap();
-    });
-
-    // clone a repository
-    let mut fo = git2::FetchOptions::new();
-    fo.remote_callbacks(cb)
-        .download_tags(git2::AutotagOption::All)
-        .update_fetchhead(true);
-    // std::fs::create_dir_all(&dst.as_ref()).unwrap();
-    
-    let repo = git2::build::RepoBuilder::new()
-        .fetch_options(fo)
-        .with_checkout(co)
-        .clone(url, dst)?;
-
-    Ok(repo)
-}
-
-
-fn clone2(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<gix::Repository> {
+fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<gix::Repository> {
+    // TODO: progress
+    // TODO: ssh auth
 
     std::fs::create_dir_all(dst)?;
     // println!("url: {:#?}", git::Url::from_bytes(url.try_into()?));
@@ -254,41 +231,6 @@ fn clone2(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<gix:
     //     let entry_path = work_dir.join(git_path::from_bstr(entry.path(&index)));
     //     assert!(entry_path.is_file(), "{:?} not found on disk", entry_path)
     // }
-
-
-    // let mut cb = git2::RemoteCallbacks::new();
-    // let git_config = git2::Config::open_default().unwrap();
-
-    // // Credentials management
-    // let mut ch = CredentialHandler::new(git_config);
-    // cb.credentials(move |url, username, allowed| ch.try_next_credential(url, username, allowed));
-    // cb.transfer_progress(|stats| {
-    //     let stats = CloneStats::from(stats);
-    //     progress.blocking_send(CloneMessage::Stats(stats)).unwrap();
-    //     true
-    // });
-
-    // let mut co = git2::build::CheckoutBuilder::new();
-    // co.progress(|path, cur, total| {
-    //     let prog = CloneProgress {
-    //         path: path.map(|p| p.to_path_buf()),
-    //         current: cur,
-    //         total,
-    //     };
-    //     progress.blocking_send(CloneMessage::Progress(prog)).unwrap();
-    // });
-
-    // // clone a repository
-    // let mut fo = git2::FetchOptions::new();
-    // fo.remote_callbacks(cb)
-    //     .download_tags(git2::AutotagOption::All)
-    //     .update_fetchhead(true);
-    // // std::fs::create_dir_all(&dst.as_ref()).unwrap();
-    
-    // let repo = git2::build::RepoBuilder::new()
-    //     .fetch_options(fo)
-    //     .with_checkout(co)
-    //     .clone(url, dst)?;
 
     Ok(repo)
 }
