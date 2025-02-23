@@ -27,3 +27,7 @@ pub fn white_b<D>(value: D) -> StyledObject<D> {
 pub fn white_bi<D>(value: D) -> StyledObject<D> {
     white_b(value).italic()
 }
+
+pub fn cyan<D>(value: D) -> StyledObject<D> {
+    style(value).cyan()
+}

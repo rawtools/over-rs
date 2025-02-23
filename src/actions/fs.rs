@@ -60,6 +60,9 @@ pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
                 target,
             )),
         };
+        if ctx.verbose || ctx.dry_run {
+            progress.println(format!("{}", action));
+        }
         progress.set_message(format!("{}", action));
         action.execute(ctx.clone()).await?;
     }
@@ -86,47 +89,45 @@ impl EnsureLink {
 
 impl fmt::Display for EnsureLink {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}", self.source.display(), self.target.display())
+        // write!(f, "{} -> {}", self.source.display(), self.target.display())
+        // We operate on string as path normalization is broken in rust
+        // See:
+        //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
+        //  - https://github.com/rust-lang/rfcs/issues/2208
+        let rel_path = self
+            .source
+            .to_str()
+            .unwrap()
+            .strip_prefix(self.overlay.root.to_str().unwrap())
+            .unwrap();
+        let target_root = self
+            .target
+            .to_str()
+            .unwrap()
+            .strip_suffix(rel_path)
+            .unwrap();
+        write!(
+            f,
+            "{} {} {}{} {} {}{}{}",
+            emojis::LINK,
+            style::white("link:"),
+            style::white("{"),
+            self.overlay.root.display(),
+            style::white("->"),
+            target_root,
+            style::white("}"),
+            rel_path,
+        )
     }
 }
 
 #[async_trait]
 impl Action for EnsureLink {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
-        if ctx.verbose || ctx.dry_run {
-            // We operate on string as path normalization is broken in rust
-            // See:
-            //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
-            //  - https://github.com/rust-lang/rfcs/issues/2208
-            let rel_path = self
-                .source
-                .to_str()
-                .unwrap()
-                .strip_prefix(self.overlay.root.to_str().unwrap())
-                .unwrap();
-            let target_root = self
-                .target
-                .to_str()
-                .unwrap()
-                .strip_suffix(rel_path)
-                .unwrap();
-            println!(
-                "{} {} {}{} {} {}{}{}",
-                emojis::LINK,
-                style::white("link:"),
-                style::white("{"),
-                self.overlay.root.display(),
-                style::white("->"),
-                target_root,
-                style::white("}"),
-                rel_path,
-            )
-        }
-
         if self.target.exists() {
             let src = fs::read_link(self.target.as_path())?;
             if src != self.source {
-                // TODO: handle links exsists
+                // TODO: handle links exists
             }
         } else if !ctx.dry_run {
             symlink_file(self.source.as_path(), self.target.as_path())?;
@@ -149,22 +150,19 @@ impl EnsureDir {
 
 impl fmt::Display for EnsureDir {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "mkdri {}", self.path.display())
+        write!(
+            f,
+            "{} {} {}",
+            emojis::DIRECTORY,
+            style::white("create directory:"),
+            self.path.display(),
+        )
     }
 }
 
 #[async_trait]
 impl Action for EnsureDir {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
-        if ctx.verbose || ctx.dry_run {
-            println!(
-                "{} {} {}",
-                emojis::DIRECTORY,
-                style::white("create directory:"),
-                self.path.display(),
-            )
-        }
-
         if !ctx.dry_run {
             create_dir_all(self.path.as_path())?;
         }

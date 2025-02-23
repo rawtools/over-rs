@@ -101,17 +101,13 @@ impl Action for EnsureGitRepository {
         });
 
         if self.path.exists() {
-            if let Some(p) = pb.as_ref() {
-                // println!("p: {:#?}", p);
-                // p.with_style(CLONE_ERROR_STYLE.clone());
-                if ctx.verbose {
-                    p.println("Repository exists")
-                }
-                p.finish_and_clear();
-            } else if ctx.verbose {
-                println!("Repository exists");
+            if ctx.verbose {
+                pb.unwrap()
+                    .with_style(DONE_PROGRESS_STYLE.clone())
+                    .finish_with_message("Repository exists");
+            } else {
+                pb.unwrap().finish_and_clear();
             }
-            // Repository::open(self.path.as_path())?
         } else if !ctx.dry_run {
             let mut state = CloneState::default();
             let url = self.remote.clone();
@@ -151,6 +147,9 @@ static CLONE_PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
         .tick_chars(style::TICK_CHARS_BRAILLE_4_6_DOWN.as_str())
         .progress_chars(style::THIN_PROGRESS.as_str())
 });
+
+static DONE_PROGRESS_STYLE: Lazy<ProgressStyle> =
+    Lazy::new(|| ProgressStyle::with_template("✅ {prefix}: {msg}").unwrap());
 
 fn clone(url: &str, dst: &Path, progress: &Sender<CloneMessage>) -> Result<Repository> {
     let mut cb = git2::RemoteCallbacks::new();

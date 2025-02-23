@@ -115,9 +115,9 @@ impl Overlay {
             "{} {} {} {} {}",
             emojis::PACKAGE,
             style::white_b("Applying overlay"),
-            style::white_bi(&self.name),
+            style::cyan(&self.name),
             style::white_b("to"),
-            style::white_bi(target_root.to_str().unwrap()),
+            style::cyan(target_root.to_str().unwrap()),
         );
         if let Some(uses) = &self.uses {
             for name in uses {
@@ -133,9 +133,9 @@ impl Overlay {
             "{} {} {} {} {} {}",
             emojis::SPARKLE,
             style::white_b("Applied overlay"),
-            style::white_bi(&self.name),
+            style::cyan(&self.name),
             style::white_b("to"),
-            style::white_bi(target_root.to_str().unwrap()),
+            style::cyan(target_root.to_str().unwrap()),
             style::white_b("with success"),
         );
 

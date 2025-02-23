@@ -9,7 +9,7 @@ default: fmt lint build test
     cargo build
 
 # Run the application
-@run *args: 
+@run *args:
     cargo run --bin over -- {{args}}
 
 @fmt:
