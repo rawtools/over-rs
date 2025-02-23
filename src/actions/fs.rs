@@ -2,17 +2,20 @@ use std::fmt;
 use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
 
+use dialoguer::Confirm;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use globset::GlobBuilder;
 use indicatif::{ProgressBar, ProgressStyle};
 use once_cell::sync::Lazy;
-use symlink::symlink_file;
+use symlink::{remove_symlink_file, symlink_file};
 
 use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
 use crate::overlays::{self, Overlay};
+use crate::ui::style::DialogTheme;
 use crate::ui::{self, emojis, style};
 use crate::utils::short_path;
 
@@ -129,9 +132,22 @@ impl Action for EnsureLink {
         if self.target.exists() {
             let src = fs::read_link(self.target.as_path())?;
             if src != self.source {
-                // TODO: handle links exists
+                if ctx.force || Confirm::with_theme(&DialogTheme::default())
+                    .with_prompt(format!(
+                        " Do you want to overwrite {} currently linked to {}?",
+                        style::yellow(short_path(self.target.to_str().unwrap())),
+                        style::yellow(short_path(src.to_str().unwrap())),
+                    ))
+                    .interact()
+                    .unwrap()
+                {
+                    remove_symlink_file(self.target.as_path())?;
+                } else {
+                    return Err(anyhow::anyhow!("Link exists"));
+                }
             }
-        } else if !ctx.dry_run {
+        }
+        if !ctx.dry_run {
             symlink_file(self.source.as_path(), self.target.as_path())?;
         }
 

@@ -3,8 +3,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{crate_name, Parser, Subcommand};
 
-use crate::exec;
-
 mod apply;
 mod list;
 mod show;
@@ -30,14 +28,6 @@ pub struct CLI {
     )]
     home: PathBuf,
 
-    #[clap(
-        long,
-        short = 'n',
-        global = true,
-        help = "Run without applying changes"
-    )]
-    dry_run: bool,
-
     #[clap(long, short, global = true, help = "Toggle debug traces")]
     debug: bool,
 
@@ -46,17 +36,6 @@ pub struct CLI {
 
     #[clap(subcommand)]
     cmd: Option<Commands>,
-}
-
-impl From<&CLI> for exec::Context {
-    fn from(val: &CLI) -> Self {
-        exec::Context {
-            dry_run: val.dry_run,
-            debug: val.debug,
-            verbose: val.verbose,
-            ..Default::default()
-        }
-    }
 }
 
 #[derive(Subcommand, Debug)]

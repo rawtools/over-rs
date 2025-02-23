@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::Args;
 
 use crate::cli::CLI;
 use crate::exec::Context;
 use crate::overlays::Repository;
 use crate::ui::{emojis, style};
-use anyhow::Result;
 
 #[derive(Args, Debug)]
 pub struct Params {
@@ -15,6 +15,12 @@ pub struct Params {
 
     #[clap(short, long, help = "The target directory")]
     target: Option<String>,
+
+    #[clap(long, short = 'n', help = "Run without applying changes")]
+    dry_run: bool,
+
+    #[clap(long, short, help = "Overwrite without prompting")]
+    force: bool,
 }
 
 pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
@@ -27,9 +33,10 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     let overlay = repo.get(&args.name)?;
 
     let ctx = Context::new(
-        cli.dry_run,
+        args.dry_run,
         cli.debug,
         cli.verbose,
+        args.force,
         repo,
         Some(overlay.clone()),
     );

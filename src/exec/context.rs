@@ -16,6 +16,9 @@ pub struct Context {
     /// Toggle verbose output
     pub verbose: bool,
 
+    /// Run overwriting eveything without prompt
+    pub force: bool,
+
     pub repository: Repository,
 
     pub overlay: Option<Overlay>,
@@ -52,6 +55,7 @@ impl Context {
         dry_run: bool,
         debug: bool,
         verbose: bool,
+        force: bool,
         repository: Repository,
         overlay: Option<Overlay>,
     ) -> Arc<Self> {
@@ -59,6 +63,7 @@ impl Context {
             dry_run,
             debug,
             verbose,
+            force,
             repository,
             overlay,
             progress: None,
@@ -70,6 +75,7 @@ impl Context {
             dry_run: self.dry_run,
             debug: self.debug,
             verbose: self.verbose,
+            force: self.force,
             repository: self.repository.clone(),
             overlay: Some(overlay),
             progress: self.progress.clone(),
@@ -81,6 +87,7 @@ impl Context {
             dry_run: self.dry_run,
             debug: self.debug,
             verbose: self.verbose,
+            force: self.force,
             repository: self.repository.clone(),
             overlay: self.overlay.clone(),
             progress: Some(Progress::Progress(progress)),
@@ -92,6 +99,7 @@ impl Context {
             dry_run: self.dry_run,
             debug: self.debug,
             verbose: self.verbose,
+            force: self.force,
             repository: self.repository.clone(),
             overlay: self.overlay.clone(),
             progress: Some(Progress::MultiProgress(progress)),
