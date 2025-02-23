@@ -122,7 +122,12 @@ impl Overlay {
         if let Some(uses) = &self.uses {
             for name in uses {
                 let overlay = ctx.repository.get(name).expect("failed");
-                let _ = Box::pin(overlay.apply_to(ctx, target_root)).await;
+                let _ = Box::pin(
+                    overlay
+                        .clone()
+                        .apply_to(&ctx.with_overlay(overlay), target_root),
+                )
+                .await;
             }
         }
 

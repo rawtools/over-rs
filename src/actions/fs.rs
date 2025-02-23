@@ -14,6 +14,7 @@ use walkdir::WalkDir;
 use crate::exec::{Action, Ctx};
 use crate::overlays::{self, Overlay};
 use crate::ui::{self, emojis, style};
+use crate::utils::short_path;
 
 static SPINNER_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
     ProgressStyle::with_template("{spinner:.cyan} {wide_msg}")
@@ -50,12 +51,12 @@ pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
         let action: Box<dyn Action> = match () {
             _ if path.is_dir() => Box::new(EnsureDir::new(target)),
             _ if path.is_file() => Box::new(EnsureLink::new(
-                overlay.clone(),
+                ctx.clone(),
                 file.clone().into_path(),
                 target,
             )),
             _ => Box::new(EnsureLink::new(
-                overlay.clone(),
+                ctx.clone(),
                 file.clone().into_path(),
                 target,
             )),
@@ -72,15 +73,15 @@ pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
 }
 
 pub struct EnsureLink {
-    pub overlay: Overlay,
+    pub ctx: Ctx,
     pub source: PathBuf,
     pub target: PathBuf,
 }
 
 impl EnsureLink {
-    pub fn new(overlay: Overlay, source: PathBuf, target: PathBuf) -> Self {
+    pub fn new(ctx: Ctx, source: PathBuf, target: PathBuf) -> Self {
         Self {
-            overlay,
+            ctx,
             source,
             target,
         }
@@ -94,11 +95,12 @@ impl fmt::Display for EnsureLink {
         // See:
         //  - https://users.rust-lang.org/t/trailing-in-paths/43166/9
         //  - https://github.com/rust-lang/rfcs/issues/2208
+        let overlay = self.ctx.overlay.as_ref().unwrap();
         let rel_path = self
             .source
             .to_str()
             .unwrap()
-            .strip_prefix(self.overlay.root.to_str().unwrap())
+            .strip_prefix(overlay.root.to_str().unwrap())
             .unwrap();
         let target_root = self
             .target
@@ -112,9 +114,9 @@ impl fmt::Display for EnsureLink {
             emojis::LINK,
             style::white("link:"),
             style::white("{"),
-            self.overlay.root.display(),
+            short_path(overlay.root.to_str().unwrap()),
             style::white("->"),
-            target_root,
+            short_path(target_root),
             style::white("}"),
             rel_path,
         )
