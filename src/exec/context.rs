@@ -1,6 +1,6 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
-use indicatif::MultiProgress;
+use indicatif::{MultiProgress, ProgressBar};
 use serde::Serialize;
 
 use crate::overlays::{Overlay, Repository};
@@ -20,27 +20,32 @@ pub struct Context {
 
     pub overlay: Option<Overlay>,
 
-    pub state: RwLock<State>,
-    // pub progress: Option<MultiProgress>,
-}
-
-#[derive(Debug, Default, Serialize)]
-pub struct State {
     #[serde(skip)]
-    pub progress: Option<MultiProgress>,
+    pub progress: Option<Progress>,
 }
 
-// #[derive(Debug, Default, Serialize)]
-// pub struct Channel<T> {
-//     // pub tx: Sender<T>,
-//     // pub rx: Receiver<T>,
-// }
+// Store the current progress bar
+#[derive(Debug, Clone)]
+pub enum Progress {
+    Progress(ProgressBar),
+    MultiProgress(MultiProgress),
+}
 
-// // impl Default for Context {
-// //     fn default() -> Self {
-// //         Self { dry_run: Default::default(), debug: Default::default(), verbose: Default::default(), repository: Default::default(), overlay: Default::default() }
-// //     }
-// // }
+impl Progress {
+    pub fn try_progress(&self) -> Option<&ProgressBar> {
+        match self {
+            Progress::Progress(p) => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn try_multiprogress(&self) -> Option<&MultiProgress> {
+        match self {
+            Progress::MultiProgress(p) => Some(p),
+            _ => None,
+        }
+    }
+}
 
 impl Context {
     pub fn new(
@@ -56,9 +61,49 @@ impl Context {
             verbose,
             repository,
             overlay,
-            state: RwLock::new(State::default()),
-            // progress: None,
+            progress: None,
         })
+    }
+
+    pub fn with_overlay(&self, overlay: Overlay) -> Arc<Self> {
+        Arc::new(Self {
+            dry_run: self.dry_run,
+            debug: self.debug,
+            verbose: self.verbose,
+            repository: self.repository.clone(),
+            overlay: Some(overlay),
+            progress: self.progress.clone(),
+        })
+    }
+
+    pub fn with_progress(&self, progress: ProgressBar) -> Arc<Self> {
+        Arc::new(Self {
+            dry_run: self.dry_run,
+            debug: self.debug,
+            verbose: self.verbose,
+            repository: self.repository.clone(),
+            overlay: self.overlay.clone(),
+            progress: Some(Progress::Progress(progress)),
+        })
+    }
+
+    pub fn with_multiprogress(&self, progress: MultiProgress) -> Arc<Self> {
+        Arc::new(Self {
+            dry_run: self.dry_run,
+            debug: self.debug,
+            verbose: self.verbose,
+            repository: self.repository.clone(),
+            overlay: self.overlay.clone(),
+            progress: Some(Progress::MultiProgress(progress)),
+        })
+    }
+
+    pub fn try_progress(&self) -> Option<&ProgressBar> {
+        self.progress.as_ref().and_then(|p| p.try_progress())
+    }
+
+    pub fn try_multiprogress(&self) -> Option<&MultiProgress> {
+        self.progress.as_ref().and_then(|p| p.try_multiprogress())
     }
 }
 

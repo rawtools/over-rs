@@ -28,16 +28,11 @@ pub async fn clone_repositories(ctx: Ctx, overlay: &Overlay, to: &Path) -> Resul
             emojis::THREAD,
             style::white("Cloning repositories"),
         ))?;
-        let progress = MultiProgress::new();
-
-        {
-            let mut state = ctx.state.write().unwrap();
-            state.progress = Some(progress);
-        }
+        let subctx = ctx.with_multiprogress(MultiProgress::new());
         let _clones = join_all(git_repos.iter().map(|(path, url)| {
             let target = to.join(path);
             let url = url.to_string();
-            let ctx = ctx.clone();
+            let ctx = subctx.clone();
             spawn(async move {
                 let action = EnsureGitRepository::new(target, url.to_string());
                 action.execute(ctx).await
@@ -79,34 +74,19 @@ impl fmt::Display for EnsureGitRepository {
 #[async_trait]
 impl Action for EnsureGitRepository {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
-        // let overlay = ctx.overlay.as_ref().unwrap();
-        // let target = overlay.resolve_target(ctx.as_ref())?;
-        // let relpath = self.path.strip_prefix(target.as_path())?;
-        // if ctx.verbose || ctx.dry_run {
-        //     ui::info(format!(
-        //         "{} {} {} {} {}",
-        //         emojis::THREAD,
-        //         "clone:".fg::<White>(),
-        //         self.remote,
-        //         "->".fg::<White>(),
-        //         self.path.display(),
-        //     ))?;
-        // }
-
-        let pb = ctx.state.read().unwrap().progress.as_ref().map(|progress| {
-            progress
-                .add(ProgressBar::new(100))
-                .with_style(CLONE_PROGRESS_STYLE.clone())
-                .with_prefix(self.short_name())
-        });
+        let pb = ctx
+            .try_multiprogress()
+            .unwrap()
+            .add(ProgressBar::new(100))
+            .with_style(CLONE_PROGRESS_STYLE.clone())
+            .with_prefix(self.short_name());
 
         if self.path.exists() {
             if ctx.verbose {
-                pb.unwrap()
-                    .with_style(DONE_PROGRESS_STYLE.clone())
+                pb.with_style(DONE_PROGRESS_STYLE.clone())
                     .finish_with_message("Repository exists");
             } else {
-                pb.unwrap().finish_and_clear();
+                pb.finish_and_clear();
             }
         } else if !ctx.dry_run {
             let mut state = CloneState::default();
@@ -121,19 +101,15 @@ impl Action for EnsureGitRepository {
                     CloneMessage::Progress(pr) => state.progress = pr,
                     CloneMessage::Stats(s) => state.stats = s,
                 }
-                if let Some(p) = pb.as_ref() {
-                    let _ = state.update_bar(p);
-                }
+                state.update_bar(&pb)?;
             }
 
             if let Err(e) = task.await? {
-                if let Some(p) = pb.as_ref() {
-                    p.println(format!("{} {}", emojis::CROSSMARK, e));
-                    p.abandon_with_message(format!("{} Failed", emojis::CROSSMARK));
-                }
+                pb.println(format!("{} {}", emojis::CROSSMARK, e));
+                pb.abandon_with_message(format!("{} Failed", emojis::CROSSMARK));
                 return Err(anyhow!(e));
-            } else if let Some(p) = pb.as_ref() {
-                p.finish_and_clear();
+            } else {
+                pb.finish_and_clear();
             }
         };
 

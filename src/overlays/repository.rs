@@ -10,7 +10,7 @@ use super::overlay::Overlay;
 use super::pattern;
 
 /// Manage all overlays
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Clone)]
 pub struct Repository {
     /// Repository root directory
     pub root: PathBuf,
