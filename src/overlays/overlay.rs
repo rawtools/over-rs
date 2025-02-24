@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use config::{Config, File, FileFormat, FileSourceFile};
-use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 
 use tera::{Context, Tera};
@@ -20,11 +19,6 @@ pub struct Overlay {
 
     pub root: PathBuf,
 
-    // #[serde(skip)]
-    // pub parent: Option<Box<Overlay>>,
-
-    // // #[serde(default = "default_is_not_parent")]
-    // // pub parent: bool,
     pub description: Option<String>,
 
     pub target: String,
@@ -71,44 +65,18 @@ impl Overlay {
             &Context::from_serialize(ctx)?,
             true,
         )?);
-        // if !path.starts_with("~") {
-        //     return Ok(path);
-        // }
-        // if path == Path::new("~") {
-        //     return Ok(home_dir().unwrap());
-        // }
-        // Ok(home_dir().map(|mut h| {
-        //     if h == Path::new("/") {
-        //         // Corner case: `h` root directory;
-        //         // don't prepend extra `/`, just drop the tilde.
-        //         path.strip_prefix("~").unwrap().to_path_buf()
-        //     } else {
-        //         h.push(path.strip_prefix("~/").unwrap());
-        //         h
-        //     }
-        // }).unwrap())
 
         Ok(match path.to_str().unwrap() {
             p if !p.starts_with("~") => path,
-            "~" => home_dir().unwrap(),
-            _ => home_dir()
-                .map(|mut h| {
-                    if h == Path::new("/") {
-                        // Corner case: `h` root directory;
-                        // don't prepend extra `/`, just drop the tilde.
-                        path.strip_prefix("~").unwrap().to_path_buf()
-                    } else {
-                        h.push(path.strip_prefix("~/").unwrap());
-                        h
-                    }
-                })
-                .unwrap(),
+            "~" => ctx.root.clone(),
+            _ => ctx.root.join(path.strip_prefix("~").unwrap()),
         })
     }
 
-    pub async fn apply_to(&self, ctx: &Ctx, target_root: &Path) -> Result<()> {
-        if !target_root.exists() {
-            let mkdir = EnsureDir::new(target_root.to_path_buf());
+    pub async fn apply(&self, ctx: &Ctx) -> Result<()> {
+        let target = self.resolve_target(ctx)?;
+        if !target.exists() {
+            let mkdir = EnsureDir::new(target.to_path_buf());
             mkdir.execute(ctx.clone()).await?;
         }
         println!(
@@ -117,22 +85,20 @@ impl Overlay {
             style::white_b("Applying overlay"),
             style::cyan(&self.name),
             style::white_b("to"),
-            style::cyan(target_root.to_str().unwrap()),
+            style::cyan(target.to_str().unwrap()),
         );
         if let Some(uses) = &self.uses {
             for name in uses {
                 let overlay = ctx.repository.get(name).expect("failed");
-                let _ = Box::pin(
-                    overlay
-                        .clone()
-                        .apply_to(&ctx.with_overlay(overlay), target_root),
-                )
-                .await;
+                if ctx.debug {
+                    println!("{:#?}", overlay);
+                }
+                let _ = Box::pin(overlay.clone().apply(&ctx.with_overlay(overlay))).await;
             }
         }
 
-        actions::git::clone_repositories(ctx.clone(), self, target_root).await?;
-        actions::fs::link(ctx.clone(), self, target_root).await?;
+        actions::git::clone_repositories(ctx.clone(), self, &target).await?;
+        actions::fs::link(ctx.clone(), self, &target).await?;
 
         println!(
             "{} {} {} {} {} {}",
@@ -140,15 +106,10 @@ impl Overlay {
             style::white_b("Applied overlay"),
             style::cyan(&self.name),
             style::white_b("to"),
-            style::cyan(target_root.to_str().unwrap()),
+            style::cyan(target.to_str().unwrap()),
             style::white_b("with success"),
         );
 
         Ok(())
-    }
-
-    pub async fn apply(&self, ctx: &Ctx) -> Result<()> {
-        let target_root = self.resolve_target(ctx)?;
-        self.apply_to(ctx, &target_root).await
     }
 }

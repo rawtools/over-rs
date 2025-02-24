@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use indicatif::{MultiProgress, ProgressBar};
 use serde::Serialize;
@@ -18,6 +18,9 @@ pub struct Context {
 
     /// Run overwriting eveything without prompt
     pub force: bool,
+
+    /// Target root (~)
+    pub root: PathBuf,
 
     pub repository: Repository,
 
@@ -56,6 +59,7 @@ impl Context {
         debug: bool,
         verbose: bool,
         force: bool,
+        root: PathBuf,
         repository: Repository,
         overlay: Option<Overlay>,
     ) -> Arc<Self> {
@@ -64,6 +68,7 @@ impl Context {
             debug,
             verbose,
             force,
+            root,
             repository,
             overlay,
             progress: None,
@@ -76,6 +81,7 @@ impl Context {
             debug: self.debug,
             verbose: self.verbose,
             force: self.force,
+            root: self.root.clone(),
             repository: self.repository.clone(),
             overlay: Some(overlay),
             progress: self.progress.clone(),
@@ -88,6 +94,7 @@ impl Context {
             debug: self.debug,
             verbose: self.verbose,
             force: self.force,
+            root: self.root.clone(),
             repository: self.repository.clone(),
             overlay: self.overlay.clone(),
             progress: Some(Progress::Progress(progress)),
@@ -100,6 +107,7 @@ impl Context {
             debug: self.debug,
             verbose: self.verbose,
             force: self.force,
+            root: self.root.clone(),
             repository: self.repository.clone(),
             overlay: self.overlay.clone(),
             progress: Some(Progress::MultiProgress(progress)),

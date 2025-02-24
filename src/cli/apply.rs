@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use dirs::home_dir;
 
 use crate::cli::CLI;
 use crate::exec::Context;
@@ -13,8 +14,8 @@ pub struct Params {
     #[clap(help = "Name of the overlay to apply")]
     name: String,
 
-    #[clap(short, long, help = "The target directory")]
-    target: Option<String>,
+    #[clap(short, long, help = "The target root directory (~)")]
+    root: Option<PathBuf>,
 
     #[clap(long, short = 'n', help = "Run without applying changes")]
     dry_run: bool,
@@ -42,32 +43,21 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
         cli.debug,
         cli.verbose,
         args.force,
+        args.root.clone().unwrap_or(home_dir().unwrap()),
         repo,
         Some(overlay.clone()),
     );
 
-    let target = match &args.target {
-        Some(root) => PathBuf::from(&root),
-        None => overlay.resolve_target(&ctx)?,
-    };
-
-    let result = overlay.apply_to(&ctx, &target).await;
+    let result = overlay.apply(&ctx).await;
     if let Err(e) = result {
         println!(
-            "{} {} {} {} {}",
+            "{} {} {}",
             emojis::CROSSMARK,
             style::white_b("Failed to apply overlay"),
             style::white_bi(&overlay.name),
-            style::white_b("to"),
-            style::white_bi(target.to_str().unwrap()),
         );
         println!("{:#?}", e);
     }
-
-    // match &args.target {
-    //     Some(root) => overlay.apply_to(&ctx, Path::new(&root)).await?,
-    //     None => overlay.apply(&ctx).await?,
-    // }
 
     Ok(())
 }
