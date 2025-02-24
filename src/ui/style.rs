@@ -1,5 +1,6 @@
 use std::fmt;
 
+use clap::builder::styling;
 use console::{style, Style, StyledObject};
 use dialoguer::theme::Theme;
 use once_cell::sync::Lazy;
@@ -149,4 +150,12 @@ impl Theme for DialogTheme {
             }
         }
     }
+}
+
+pub fn clap_styles() -> styling::Styles {
+    styling::Styles::styled()
+        .header(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .usage(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .literal(styling::AnsiColor::Blue.on_default() | styling::Effects::BOLD)
+        .placeholder(styling::AnsiColor::Cyan.on_default())
 }

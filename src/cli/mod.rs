@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{crate_name, Parser, Subcommand};
 
+use crate::ui::style::clap_styles;
+
 mod apply;
 mod list;
 mod show;
@@ -15,6 +17,7 @@ mod status;
     about,
     name = crate_name!(),
     long_about = None,
+    styles = clap_styles(),
 	// after_help = "over allows you to version your configuration files and workspaces settings",
 )]
 pub struct CLI {
