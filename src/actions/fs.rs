@@ -130,21 +130,31 @@ impl fmt::Display for EnsureLink {
 impl Action for EnsureLink {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
         if self.target.exists() {
-            let src = fs::read_link(self.target.as_path())?;
-            if src != self.source {
-                if ctx.force || Confirm::with_theme(&DialogTheme::default())
-                    .with_prompt(format!(
-                        " Do you want to overwrite {} currently linked to {}?",
-                        style::yellow(short_path(self.target.to_str().unwrap())),
-                        style::yellow(short_path(src.to_str().unwrap())),
-                    ))
-                    .interact()
-                    .unwrap()
-                {
-                    remove_symlink_file(self.target.as_path())?;
+            if self.target.is_symlink() {
+                let src = fs::read_link(self.target.as_path())?;
+                if src != self.source {
+                    if ctx.force
+                        || Confirm::with_theme(&DialogTheme::default())
+                            .with_prompt(format!(
+                                " Do you want to overwrite {} currently linked to {}?",
+                                style::yellow(short_path(self.target.to_str().unwrap())),
+                                style::yellow(short_path(src.to_str().unwrap())),
+                            ))
+                            .interact()
+                            .unwrap()
+                    {
+                        remove_symlink_file(self.target.as_path())?;
+                    } else {
+                        return Err(anyhow::anyhow!("Link {} exists", self.target.display()));
+                    }
                 } else {
-                    return Err(anyhow::anyhow!("Link exists"));
+                    return Ok(());
                 }
+            } else if self.target.is_file() {
+                // TODO: handle file absorption
+                return Err(anyhow::anyhow!("File {} exists", self.target.display()));
+            } else {
+                return Err(anyhow::anyhow!("{} is a directory", self.target.display()));
             }
         }
         if !ctx.dry_run {
