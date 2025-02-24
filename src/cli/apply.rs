@@ -26,11 +26,16 @@ pub struct Params {
 pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
     if cli.debug {
         println!("{:#?}", cli);
-        println!("{:#?}", args);
     }
 
     let repo = Repository::new(PathBuf::from(&cli.home));
+    if cli.debug {
+        println!("{:#?}", repo);
+    }
     let overlay = repo.get(&args.name)?;
+    if cli.debug {
+        println!("{:#?}", overlay);
+    }
 
     let ctx = Context::new(
         args.dry_run,
@@ -56,7 +61,7 @@ pub async fn execute(cli: &CLI, args: &Params) -> Result<()> {
             style::white_b("to"),
             style::white_bi(target.to_str().unwrap()),
         );
-        println!("{}", e);
+        println!("{:#?}", e);
     }
 
     // match &args.target {
