@@ -9,7 +9,7 @@ license = "MIT"
 
 
 [dependencies]
-dialoguer = "0.11"
+dialoguer = { version = "0.11", features = ["fuzzy-select"] }
 directories = "6.0"
 dirs = "6.0"
 globset = "0.4"

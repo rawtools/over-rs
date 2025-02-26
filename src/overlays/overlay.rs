@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
@@ -30,6 +31,16 @@ pub struct Overlay {
     pub git: Option<HashMap<String, String>>,
 
     pub install: Option<HashMap<String, Vec<String>>>,
+}
+
+impl fmt::Display for Overlay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.name
+        )
+    }
 }
 
 impl Overlay {
@@ -110,6 +121,12 @@ impl Overlay {
             style::white_b("with success"),
         );
 
+        Ok(())
+    }
+    
+    pub async fn add_file(&self, ctx: &Ctx, file: &PathBuf) -> Result<()> {
+        let root = self.resolve_target(ctx)?;
+        actions::fs::add_file(ctx.clone(), self, file).await?;
         Ok(())
     }
 }

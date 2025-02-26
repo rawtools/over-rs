@@ -5,6 +5,7 @@ use clap::{crate_name, Parser, Subcommand};
 
 use crate::ui::style::clap_styles;
 
+mod add;
 mod apply;
 mod list;
 mod show;
@@ -43,6 +44,9 @@ pub struct CLI {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    #[clap(name = "add", about = "Add a file to an overlay")]
+    Add(add::Params),
+
     #[clap(name = "list", about = "List known overlays", alias = "ls")]
     List(list::Params),
 
@@ -62,6 +66,10 @@ pub enum Commands {
 pub async fn main() -> Result<()> {
     let args = CLI::parse();
     match args.cmd {
+        Some(Commands::Add(ref opt)) => {
+            add::execute(&args, opt).await?;
+        }
+
         Some(Commands::List(ref opt)) => {
             list::execute(&args, opt).await?;
         }

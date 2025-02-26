@@ -1,3 +1,4 @@
+use std::env::current_dir;
 use std::fmt;
 use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
@@ -11,6 +12,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use once_cell::sync::Lazy;
 use symlink::{remove_symlink_file, symlink_file};
 
+use tokio::fs::rename;
 use walkdir::WalkDir;
 
 use crate::exec::{Action, Ctx};
@@ -72,6 +74,47 @@ pub async fn link(ctx: Ctx, overlay: &Overlay, to: &Path) -> Result<()> {
     }
     // progress.finish_with_message("DOne");
     progress.finish_and_clear();
+    Ok(())
+}
+
+pub async fn add_file(ctx: Ctx, overlay: &Overlay, file: &PathBuf) -> Result<()> {
+    let src = if file.is_relative() {
+        &current_dir()?.join(file)
+    } else {
+        file
+    };
+    if ctx.debug {
+        println!("{:#?}", src);
+    }
+    let root = overlay.resolve_target(&ctx)?;
+    if ctx.debug {
+        println!("{:#?}", root);
+    }
+    let rel_path = match src.strip_prefix(&root) {
+        Ok(tail) => tail,
+        Err(_) => {
+            return Err(anyhow::anyhow!(
+                "{} is not included in {}",
+                src.display(),
+                root.display(),
+            ))
+        }
+    };
+    let target = overlay.root.join(rel_path);
+
+    let move_action = MoveFile::new(ctx.clone(), src.clone(), target.clone());
+    let link_action = EnsureLink::new(ctx.clone(), target, src.to_path_buf());
+
+    if ctx.verbose || ctx.dry_run {
+        println!("{}", move_action);
+    }
+    move_action.execute(ctx.clone()).await?;
+
+    if ctx.verbose || ctx.dry_run {
+        println!("{}", link_action);
+    }
+    link_action.execute(ctx.clone()).await?;
+
     Ok(())
 }
 
@@ -193,6 +236,55 @@ impl Action for EnsureDir {
     async fn execute(&self, ctx: Ctx) -> Result<()> {
         if !ctx.dry_run {
             create_dir_all(self.path.as_path())?;
+        }
+        Ok(())
+    }
+}
+
+pub struct MoveFile {
+    pub ctx: Ctx,
+    pub src: PathBuf,
+    pub dst: PathBuf,
+}
+
+impl MoveFile {
+    pub fn new(ctx: Ctx, src: PathBuf, dst: PathBuf) -> Self {
+        Self { ctx, src, dst }
+    }
+}
+
+impl fmt::Display for MoveFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let overlay = self.ctx.overlay.as_ref().unwrap();
+        let src_root = overlay.resolve_target(&self.ctx).unwrap();
+
+        let rel_path = self
+            .src
+            .to_str()
+            .unwrap()
+            .strip_prefix(src_root.to_str().unwrap())
+            .unwrap();
+        let target_root = self.dst.to_str().unwrap().strip_suffix(rel_path).unwrap();
+        write!(
+            f,
+            "{} {} {}{} {} {}{}{}",
+            emojis::MOVE_FILE,
+            style::white("move file:"),
+            style::white("{"),
+            short_path(src_root.to_str().unwrap()),
+            style::white("->"),
+            short_path(target_root),
+            style::white("}"),
+            rel_path,
+        )
+    }
+}
+
+#[async_trait]
+impl Action for MoveFile {
+    async fn execute(&self, ctx: Ctx) -> Result<()> {
+        if !ctx.dry_run {
+            rename(&self.src, &self.dst).await?;
         }
         Ok(())
     }
